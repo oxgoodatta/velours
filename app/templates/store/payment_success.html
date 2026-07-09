@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Payment Successful — {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-24 text-center fade-in">
+  <div class="w-20 h-20 rounded-full bg-gold-500/10 border border-gold-500/30 flex items-center justify-center mx-auto mb-6">
+    <span class="text-4xl">✅</span>
+  </div>
+  <h1 class="font-display text-3xl font-black mb-3" style="color:var(--text-primary)">Payment Successful!</h1>
+  <p class="text-muted mb-8">Your purchase of <strong style="color:var(--text-primary)">{{ product.name }}</strong> is confirmed.</p>
+
+  {% if product.delivery_content %}
+  <div class="card rounded-2xl p-6 mb-8 text-left" style="border-color: rgba(245,158,11,0.3)">
+    <h2 class="text-xs font-black text-gold-500 uppercase tracking-widest mb-3">Your Download / Access Link</h2>
+    <div class="rounded-xl p-4 text-sm font-mono break-all" style="background:var(--bg-primary); color:var(--text-primary)">
+      {{ product.delivery_content }}
+    </div>
+    {% if product.delivery_content.startswith('http') %}
+    <a href="{{ product.delivery_content }}" target="_blank"
+       class="btn-gold mt-3 inline-block px-6 py-2 rounded-xl text-sm shadow-gold">
+      Open Link →
+    </a>
+    {% endif %}
+    <p class="text-xs text-muted mt-3">⚠️ Save this — it's also available in your dashboard under My Purchases.</p>
+  </div>
+  {% endif %}
+
+  {% if referral_unlocked_now %}
+  <div class="card rounded-2xl p-5 mb-8 text-left" style="border-color: rgba(245,158,11,0.4)">
+    <h3 class="font-bold text-gold-500 mb-1">🎉 Referral Link Unlocked!</h3>
+    <p class="text-sm text-muted">Go to your dashboard to get your link. You have <strong class="text-gold-500">{{ slots_added }} referral slots</strong> from this purchase.</p>
+  </div>
+  {% endif %}
+
+  <div class="flex gap-3 justify-center">
+    <a href="{{ url_for('dashboard.index') }}" class="btn-gold px-6 py-3 rounded-xl shadow-gold">Go to Dashboard</a>
+    <a href="{{ url_for('store.shop') }}" class="card px-6 py-3 rounded-xl text-sm font-semibold text-muted hover:text-gold-500 transition-colors">Shop More</a>
+  </div>
+</div>
+{% endblock %}

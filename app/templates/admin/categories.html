@@ -1,0 +1,33 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Categories — {{ APP_NAME }}{% endblock %}
+{% block admin_content %}
+<div class="fade-in">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Categories</h1>
+    <a href="{{ url_for('admin.create_category') }}" class="btn-gold px-5 py-2.5 rounded-xl text-sm font-bold shadow-gold">+ New Category</a>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    {% for cat in categories %}
+    <div class="card rounded-2xl p-5 hover:border-gold-500/40 transition-colors">
+      <div class="flex justify-between items-start mb-3">
+        <span class="text-3xl">{{ cat.icon }}</span>
+        <div class="flex gap-2">
+          <a href="{{ url_for('admin.edit_category', id=cat.id) }}"
+             class="text-xs card px-3 py-1 rounded-lg text-muted hover:text-gold-500 transition-colors">Edit</a>
+          <form method="POST" action="{{ url_for('admin.delete_category', id=cat.id) }}"
+                onsubmit="return confirm('Delete this category?')">
+            <button class="text-xs bg-red-500/10 text-red-500 px-3 py-1 rounded-lg hover:bg-red-500/20 transition-colors">Del</button>
+          </form>
+        </div>
+      </div>
+      <h3 class="font-bold text-sm" style="color:var(--text-primary)">{{ cat.name }}</h3>
+      <p class="text-xs text-muted mt-0.5">{{ cat.products|selectattr('is_active')|list|length }} products</p>
+    </div>
+    {% else %}
+    <div class="col-span-3 text-center py-16 text-muted">
+      No categories. <a href="{{ url_for('admin.create_category') }}" class="text-gold-500 hover:underline">Create one →</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

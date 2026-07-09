@@ -1,0 +1,59 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Withdrawals — {{ APP_NAME }}{% endblock %}
+{% block admin_content %}
+<div class="fade-in">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Withdrawals</h1>
+    <div class="flex gap-2">
+      {% for s in ['pending', 'approved', 'rejected'] %}
+      <a href="{{ url_for('admin.withdrawals', status=s) }}"
+         class="text-xs px-3 py-1.5 rounded-xl font-semibold transition-colors
+         {% if status_filter == s %}btn-gold{% else %}card text-muted hover:text-gold-500{% endif %}">
+        {{ s.title() }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="space-y-4">
+    {% for w in withdrawals %}
+    <div class="card rounded-2xl p-5 hover:border-gold-500/30 transition-colors">
+      <div class="flex justify-between items-start gap-4">
+        <div>
+          <p class="font-bold text-sm" style="color:var(--text-primary)">{{ w.user.name }}</p>
+          <p class="text-xs text-muted">{{ w.user.email }} · {{ w.created_at.strftime('%d %b %Y %H:%M') }}</p>
+          <div class="flex items-center gap-4 mt-2">
+            <span class="font-display font-black text-2xl text-gold-500">GHS {{ '%.2f'|format(w.amount) }}</span>
+            <span class="text-sm text-muted">{{ w.momo_network }} · {{ w.momo_number }}</span>
+          </div>
+          {% if w.admin_note %}<p class="text-xs text-muted mt-1">Note: {{ w.admin_note }}</p>{% endif %}
+        </div>
+        {% if w.status == 'pending' %}
+        <div class="flex gap-2 flex-shrink-0">
+          <form method="POST" action="{{ url_for('admin.approve_withdrawal', id=w.id) }}" class="flex gap-2 items-center">
+            <input type="text" name="note" placeholder="Note (optional)"
+                   class="card px-3 py-1.5 text-xs rounded-xl w-28 focus:outline-none focus:border-gold-500"
+                   style="color:var(--text-primary)"/>
+            <button class="bg-green-500/10 text-green-500 text-xs px-4 py-1.5 rounded-xl font-bold hover:bg-green-500/20">Approve</button>
+          </form>
+          <form method="POST" action="{{ url_for('admin.reject_withdrawal', id=w.id) }}">
+            <input type="hidden" name="note" value="Rejected"/>
+            <button onclick="return confirm('Reject and refund?')"
+                    class="bg-red-500/10 text-red-500 text-xs px-4 py-1.5 rounded-xl font-bold hover:bg-red-500/20">Reject</button>
+          </form>
+        </div>
+        {% else %}
+        <span class="px-3 py-1 rounded-full text-xs font-bold
+          {% if w.status == 'approved' %}bg-green-500/10 text-green-500{% else %}bg-red-500/10 text-red-500{% endif %}">
+          {{ w.status.title() }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center py-16 text-muted">
+      <p class="text-3xl mb-2">💸</p>No {{ status_filter }} withdrawals.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

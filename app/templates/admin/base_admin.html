@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-56 flex-shrink-0 fixed left-0 top-16 bottom-0 overflow-y-auto border-r border-themed"
+         style="background:var(--bg-card)">
+    <div class="p-4">
+      <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-4 px-2">Admin Panel</p>
+      <nav class="space-y-0.5">
+        {% set nav_items = [
+          ('admin.dashboard', '📊', 'Dashboard'),
+          ('admin.categories', '📂', 'Categories'),
+          ('admin.products', '🛍️', 'Products'),
+          ('admin.orders', '📦', 'Orders'),
+          ('admin.withdrawals', '💸', 'Withdrawals'),
+          ('admin.users', '👥', 'Users'),
+          ('admin.admins', '🔑', 'Admin Accounts'),
+        ] %}
+        {% for endpoint, icon, label in nav_items %}
+        <a href="{{ url_for(endpoint) }}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
+           {% if request.endpoint == endpoint %}bg-gold-500 text-blueblack font-bold{% else %}text-muted hover:text-gold-500 hover:bg-gold-500/5{% endif %}">
+          <span>{{ icon }}</span>{{ label }}
+        </a>
+        {% endfor %}
+        <div class="border-t border-themed pt-2 mt-3">
+          <a href="{{ url_for('store.index') }}"
+             class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-gold-500 transition-colors">
+            <span>🏠</span>View Store
+          </a>
+        </div>
+      </nav>
+    </div>
+  </aside>
+  <main class="ml-56 flex-1 p-8 min-h-screen" style="background:var(--bg-primary)">
+    {% block admin_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

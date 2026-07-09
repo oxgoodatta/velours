@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Join {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 py-20">
+  <div class="w-full max-w-md fade-in">
+    <div class="text-center mb-8">
+      <img src="{{ url_for('static', filename='img/logo.jpeg') }}" alt="{{ APP_NAME }}"
+           class="h-16 w-auto object-contain mx-auto mb-4"
+           onerror="this.style.display='none'"/>
+      <h1 class="font-display text-3xl font-semibold" style="color:var(--text-primary)">Join {{ APP_NAME }}</h1>
+      <p class="font-display-italic text-sm mt-1" style="color:var(--gold)">Buy digital products. Earn commissions.</p>
+    </div>
+    <div class="card rounded-2xl p-8">
+      <form method="POST" class="space-y-4">
+        {% for fname, ftype, fplaceholder, flabel in [
+          ('name', 'text', 'Kwame Mensah', 'Full Name'),
+          ('email', 'email', 'you@example.com', 'Email Address'),
+          ('phone', 'tel', '0241234567', 'Phone (MoMo Number)'),
+          ('password', 'password', '••••••••', 'Password'),
+        ] %}
+        <div>
+          <label class="text-xs font-semibold text-muted block mb-1.5 uppercase tracking-widest">{{ flabel }}</label>
+          <input type="{{ ftype }}" name="{{ fname }}"
+                 {% if fname in ['name','email','password'] %}required{% endif %}
+                 placeholder="{{ fplaceholder }}"
+                 class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none transition-colors"
+                 style="color:var(--text-primary)"
+                 onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''"/>
+        </div>
+        {% endfor %}
+
+        {% if referral_code %}
+        <div class="rounded-xl px-4 py-3 border" style="background:rgba(201,168,76,0.07); border-color:rgba(201,168,76,0.3)">
+          <p class="text-xs font-semibold" style="color:var(--gold)">🎉 Referred! Code: <strong>{{ referral_code }}</strong></p>
+          <input type="hidden" name="referral_code" value="{{ referral_code }}"/>
+        </div>
+        {% else %}
+        <div>
+          <label class="text-xs font-semibold text-muted block mb-1.5 uppercase tracking-widest">Referral Code (optional)</label>
+          <input type="text" name="referral_code" placeholder="Enter code if you have one"
+                 class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none uppercase transition-colors"
+                 style="color:var(--text-primary)"
+                 onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''"/>
+        </div>
+        {% endif %}
+        <button type="submit" class="w-full btn-gold py-3.5 rounded-xl text-sm tracking-wide">Create Account</button>
+      </form>
+    </div>
+    <p class="text-center text-sm text-muted mt-6">
+      Already have an account?
+      <a href="{{ url_for('auth.login') }}" class="font-semibold hover:underline transition-colors" style="color:var(--gold)">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

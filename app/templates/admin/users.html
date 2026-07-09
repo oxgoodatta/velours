@@ -1,0 +1,47 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Users — {{ APP_NAME }}{% endblock %}
+{% block admin_content %}
+<div class="fade-in">
+  <h1 class="font-display text-2xl font-bold mb-8" style="color:var(--text-primary)">Users</h1>
+  <div class="card rounded-2xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead style="background:var(--bg-primary)">
+        <tr>
+          {% for h in ['User', 'Phone', 'Wallet', 'Referral Slots', 'Joined'] %}
+          <th class="px-5 py-3 text-left text-xs font-bold text-muted uppercase tracking-wider">{{ h }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-themed">
+        {% for u in users %}
+        <tr class="hover:bg-gold-500/3 transition-colors">
+          <td class="px-5 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-gold-500 flex items-center justify-center flex-shrink-0">
+                <span class="text-blueblack font-black text-xs">{{ u.name[0].upper() }}</span>
+              </div>
+              <div>
+                <p class="font-semibold text-xs" style="color:var(--text-primary)">
+                  {{ u.name }}{% if u.is_admin %} <span class="ml-1 bg-gold-500/10 text-gold-500 text-[10px] px-1.5 py-0.5 rounded-full font-bold">Admin</span>{% endif %}
+                </p>
+                <p class="text-[10px] text-muted">{{ u.email }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-4 text-xs text-muted">{{ u.phone or '—' }}</td>
+          <td class="px-5 py-4 font-bold text-gold-500">GHS {{ '%.2f'|format(u.wallet_balance) }}</td>
+          <td class="px-5 py-4 text-xs text-muted">
+            {% if u.referral_unlocked %}
+            <span class="text-gold-500 font-bold">{{ u.referral_slots_remaining }}</span>/{{ u.referral_slots_total }} remaining
+            {% else %}
+            <span class="text-muted">Locked</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-4 text-xs text-muted">{{ u.created_at.strftime('%d %b %Y') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

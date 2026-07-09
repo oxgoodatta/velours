@@ -1,0 +1,74 @@
+<!-- products.html -->
+{% extends 'admin/base_admin.html' %}
+{% block title %}Products — {{ APP_NAME }}{% endblock %}
+{% block admin_content %}
+<div class="fade-in">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Products</h1>
+    <a href="{{ url_for('admin.create_product') }}" class="btn-gold px-5 py-2.5 rounded-xl text-sm font-bold shadow-gold">+ New Product</a>
+  </div>
+  <div class="card rounded-2xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead style="background:var(--bg-primary)">
+        <tr>
+          {% for h in ['Product', 'Price', 'Commission', 'Sales', 'Status', 'Actions'] %}
+          <th class="px-5 py-3 text-left text-xs font-bold text-muted uppercase tracking-wider">{{ h }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-themed">
+        {% for p in products %}
+        <tr class="hover:bg-gold-500/3 transition-colors">
+          <td class="px-5 py-4">
+            <div class="flex items-center gap-3">
+              {% if p.preview_image %}
+              <img src="{{ url_for('static', filename=p.preview_image) }}" class="w-10 h-10 rounded-xl object-cover"/>
+              {% else %}
+              <div class="w-10 h-10 rounded-xl bg-gold-500/10 flex items-center justify-center text-lg">
+                {% if p.category %}{{ p.category.icon }}{% else %}📦{% endif %}
+              </div>
+              {% endif %}
+              <div>
+                <p class="font-semibold text-xs" style="color:var(--text-primary)">{{ p.name }}</p>
+                {% if p.category %}<p class="text-[10px] text-muted">{{ p.category.name }}</p>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-4 font-black text-gold-500">GHS {{ '%.0f'|format(p.price) }}</td>
+          <td class="px-5 py-4 text-xs text-muted">
+            {{ '%.0f'|format(p.referral_commission_pct) }}%
+            <span class="text-gold-500 font-semibold">(GHS {{ '%.2f'|format(p.commission_amount) }})</span>
+          </td>
+          <td class="px-5 py-4 text-muted">{{ p.total_sales }}</td>
+          <td class="px-5 py-4">
+            <div class="flex gap-1 flex-wrap">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold
+                {% if p.is_active %}bg-green-500/10 text-green-500{% else %}bg-gray-500/10 text-muted{% endif %}">
+                {% if p.is_active %}Active{% else %}Hidden{% endif %}
+              </span>
+              {% if p.is_featured %}
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold-500/10 text-gold-500">Featured</span>
+              {% endif %}
+            </div>
+          </td>
+          <td class="px-5 py-4">
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin.edit_product', id=p.id) }}"
+                 class="text-xs card px-3 py-1.5 rounded-lg text-muted hover:text-gold-500 transition-colors font-medium">Edit</a>
+              <form method="POST" action="{{ url_for('admin.delete_product', id=p.id) }}"
+                    onsubmit="return confirm('Delete this product?')">
+                <button class="text-xs bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors font-medium">Del</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="px-5 py-16 text-center text-muted">
+          No products. <a href="{{ url_for('admin.create_product') }}" class="text-gold-500 hover:underline">Create your first one →</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

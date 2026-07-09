@@ -1,0 +1,35 @@
+<a href="{{ url_for('store.product_detail', slug=product.slug) }}"
+   class="card card-hover rounded-2xl overflow-hidden group flex flex-col">
+  <!-- Preview image -->
+  <div class="relative aspect-video overflow-hidden flex-shrink-0" style="background:var(--bg-primary)">
+    {% if product.preview_image %}
+    <img src="{{ url_for('static', filename=product.preview_image) }}"
+         alt="{{ product.name }}"
+         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+    {% else %}
+    <div class="w-full h-full flex items-center justify-center">
+      <span class="text-5xl">{% if product.category %}{{ product.category.icon }}{% else %}📦{% endif %}</span>
+    </div>
+    {% endif %}
+    {% if product.is_featured %}
+    <span class="absolute top-2.5 left-2.5 text-[10px] font-bold px-2.5 py-1 rounded-full tracking-widest uppercase"
+          style="background:linear-gradient(135deg,#C9A84C,#B8962E); color:#0D1B2A">FEATURED</span>
+    {% endif %}
+  </div>
+  <!-- Info -->
+  <div class="p-4 flex flex-col flex-1">
+    {% if product.category %}
+    <span class="text-[10px] font-bold uppercase tracking-widest mb-1.5" style="color:var(--gold)">{{ product.category.name }}</span>
+    {% endif %}
+    <h3 class="font-medium text-sm leading-snug line-clamp-2 flex-1" style="color:var(--text-primary)">{{ product.name }}</h3>
+    <div class="flex items-center justify-between mt-3 pt-3 border-t border-themed gap-2">
+      <span class="font-display text-lg font-semibold" style="color:var(--gold)">GHS {{ '%.0f'|format(product.price) }}</span>
+      {% if product.referral_commission_pct > 0 %}
+      <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+            style="color:var(--gold); border-color:rgba(201,168,76,0.35); background:rgba(201,168,76,0.07)">
+        {{ '%.0f'|format(product.referral_commission_pct) }}% commission
+      </span>
+      {% endif %}
+    </div>
+  </div>
+</a>

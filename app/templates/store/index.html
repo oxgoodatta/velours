@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}{{ APP_NAME }} — {{ APP_TAGLINE }}{% endblock %}
+
+{% block content %}
+
+<!-- ── HERO CAROUSEL ──────────────────────────────────────────────── -->
+<section class="relative overflow-hidden" style="height: clamp(480px, 72vh, 780px);"
+  x-data="{
+    current: 0,
+    total: 5,
+    autoplay: null,
+    start() {
+      this.autoplay = setInterval(() => { this.next(); }, 5000);
+    },
+    next() { this.current = (this.current + 1) % this.total; },
+    prev() { this.current = (this.current - 1 + this.total) % this.total; },
+    goto(i) { this.current = i; clearInterval(this.autoplay); this.start(); }
+  }"
+  x-init="start()"
+>
+
+  <!-- Slides — NO dark overlay, images show clean and clear -->
+  <div class="absolute inset-0">
+    {% for i in range(1, 6) %}
+    <div class="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+         :class="current === {{ loop.index0 }} ? 'opacity-100 z-10' : 'opacity-0 z-0'">
+      <img src="{{ url_for('static', filename='img/hero' ~ i ~ '.jpeg') }}"
+           alt="Hero {{ i }}"
+           class="w-full h-full object-cover"
+           onerror="this.parentElement.style.background='linear-gradient(135deg, #0D1B2A 0%, #1a2d42 50%, #0a0a0b 100%)'"/>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Overlay -->
+  <div class="absolute inset-0 z-20 pointer-events-none"
+       style="background: linear-gradient(135deg, rgba(10,10,11,0.72) 0%, rgba(13,27,42,0.58) 50%, rgba(10,10,11,0.68) 100%);">
+  </div>
+  <!-- Bottom fade -->
+  <div class="absolute inset-0 z-20 pointer-events-none"
+       style="background: linear-gradient(to top, rgba(10,10,11,0.88) 0%, transparent 60%);">
+  </div>
+
+  <!-- Hero Content -->
+  <div class="relative z-30 h-full flex flex-col justify-end pb-14 md:pb-20">
+    <div class="max-w-7xl mx-auto px-6 w-full">
+      <div class="max-w-2xl">
+        <p class="font-display-italic text-sm md:text-base mb-3 tracking-widest uppercase"
+           style="color:#C9A84C; text-shadow: 0 1px 8px rgba(0,0,0,0.5)">
+          🇬🇭 Ghana's Premium Digital Marketplace
+        </p>
+        <h1 class="font-display text-5xl md:text-7xl font-semibold text-white leading-[1.04] mb-5"
+            style="text-shadow: 0 2px 20px rgba(0,0,0,0.45)">
+          Digital Products.<br/>
+          <em class="font-display-italic not-italic" style="color:#C9A84C">Endless Possibilities.</em>
+        </h1>
+        <p class="text-white/80 text-base md:text-lg mb-8 leading-relaxed max-w-xl"
+           style="text-shadow: 0 1px 6px rgba(0,0,0,0.5)">
+          Templates, eBooks, storybooks &amp; more — buy once, use forever.
+          Share your link and earn commissions on every sale.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <a href="{{ url_for('store.shop') }}"
+             class="btn-gold px-8 py-3.5 rounded-xl text-sm font-semibold inline-flex items-center gap-2 w-fit">
+            Browse Products
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+          </a>
+          {% if not current_user.is_authenticated %}
+          <a href="{{ url_for('auth.register') }}"
+             class="btn-outline-gold px-8 py-3.5 rounded-xl text-sm w-fit" style="backdrop-filter:blur(8px)">
+            Start Earning →
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prev / Next arrows -->
+  <button @click="prev()"
+          class="absolute left-4 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full flex items-center justify-center transition-all"
+          style="background:rgba(10,10,11,0.45); border:1px solid rgba(201,168,76,0.35); color:#C9A84C; backdrop-filter:blur(8px)"
+          onmouseover="this.style.background='rgba(201,168,76,0.25)'"
+          onmouseout="this.style.background='rgba(10,10,11,0.45)'">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+    </svg>
+  </button>
+  <button @click="next()"
+          class="absolute right-4 top-1/2 -translate-y-1/2 z-40 w-10 h-10 rounded-full flex items-center justify-center transition-all"
+          style="background:rgba(10,10,11,0.45); border:1px solid rgba(201,168,76,0.35); color:#C9A84C; backdrop-filter:blur(8px)"
+          onmouseover="this.style.background='rgba(201,168,76,0.25)'"
+          onmouseout="this.style.background='rgba(10,10,11,0.45)'">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+    </svg>
+  </button>
+
+  <!-- Dot indicators -->
+  <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-40 flex gap-2">
+    <template x-for="i in total" :key="i">
+      <button @click="goto(i-1)"
+              class="rounded-full transition-all duration-300"
+              :style="current === i-1
+                ? 'width:24px; height:6px; background:#C9A84C;'
+                : 'width:6px; height:6px; background:rgba(255,255,255,0.45);'">
+      </button>
+    </template>
+  </div>
+</section>
+
+<!-- ── MINI STATS BAR ─────────────────────────────────────────────── -->
+<div class="border-b border-themed" style="background:var(--bg-card)">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex justify-center divide-x divide-themed">
+      {% for label, value in [('Instant Delivery', '100%'), ('Pay in Cedis', 'GHS'), ('Easy Withdrawal', 'MoMo'), ('Earn Commission', '✓')] %}
+      <div class="px-8 py-4 text-center">
+        <p class="font-display text-lg font-semibold" style="color:var(--gold)">{{ value }}</p>
+        <p class="text-xs text-muted mt-0.5 tracking-wide">{{ label }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── CATEGORIES ─────────────────────────────────────────────────── -->
+{% if categories %}
+<section class="max-w-7xl mx-auto px-4 py-16">
+  <div class="flex items-center gap-4 mb-10">
+    <h2 class="font-display text-3xl font-semibold" style="color:var(--text-primary)">Browse Categories</h2>
+    <div class="flex-1 gold-line"></div>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+    {% for cat in categories %}
+    <a href="{{ url_for('store.shop', category=cat.slug) }}"
+       class="card card-hover rounded-2xl p-4 text-center group transition-all">
+      <p class="font-display font-semibold text-sm tracking-wide" style="color:var(--gold)">{{ cat.name }}</p>
+      <p class="text-xs text-muted mt-1">{{ cat.products|selectattr('is_active')|list|length }} items</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ── FEATURED PRODUCTS ──────────────────────────────────────────── -->
+{% if featured %}
+<section class="max-w-7xl mx-auto px-4 pb-16">
+  <div class="flex justify-between items-end mb-10">
+    <div>
+      <p class="font-display-italic text-sm mb-1" style="color:var(--gold)">Handpicked for you</p>
+      <h2 class="font-display text-3xl font-semibold" style="color:var(--text-primary)">Featured Products</h2>
+    </div>
+    <a href="{{ url_for('store.shop') }}"
+       class="text-sm font-medium transition-colors hover:underline" style="color:var(--gold)">View all →</a>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for product in featured %}{% include 'store/_product_card.html' %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ── LATEST ─────────────────────────────────────────────────────── -->
+{% if latest %}
+<section class="max-w-7xl mx-auto px-4 pb-20">
+  <div class="flex items-center gap-4 mb-10">
+    <h2 class="font-display text-3xl font-semibold" style="color:var(--text-primary)">Latest Added</h2>
+    <div class="flex-1 gold-line"></div>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    {% for product in latest %}{% include 'store/_product_card.html' %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ── HOW IT WORKS ───────────────────────────────────────────────── -->
+<section class="border-t border-themed py-20" style="background:var(--bg-card)">
+  <div class="max-w-5xl mx-auto px-4 text-center">
+    <p class="font-display-italic mb-2" style="color:var(--gold)">Simple. Rewarding. Instant.</p>
+    <h2 class="font-display text-4xl font-semibold mb-3" style="color:var(--text-primary)">How It Works</h2>
+    <div class="gold-line max-w-xs mx-auto mb-12"></div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {% for icon, title, desc in [
+        ('🛍️', 'Buy a Product', 'Browse and purchase any digital product. Get instant access to your Canva link or download immediately after payment.'),
+        ('🔗', 'Unlock Your Link', 'After purchase, your unique referral link activates. Referral slots are based on your purchase amount — GHS 100 = 10 slots.'),
+        ('💰', 'Earn Commission', 'Every time someone buys through your link, a set percentage is added to your wallet automatically. Withdraw via MoMo anytime.'),
+      ] %}
+      <div class="card card-hover rounded-2xl p-7 text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-5 text-2xl"
+             style="background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.25)">
+          {{ icon }}
+        </div>
+        <h3 class="font-display text-xl font-semibold mb-3" style="color:var(--text-primary)">{{ title }}</h3>
+        <p class="text-sm text-muted leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

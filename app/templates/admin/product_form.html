@@ -1,0 +1,140 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{% if product %}Edit{% else %}New{% endif %} Product — {{ APP_NAME }}{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-2xl fade-in">
+  <div class="flex items-center gap-3 mb-8">
+    <a href="{{ url_for('admin.products') }}" class="text-muted hover:text-gold-500 text-sm">← Products</a>
+    <span class="text-muted">/</span>
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text-primary)">
+      {% if product %}Edit Product{% else %}New Product{% endif %}
+    </h1>
+  </div>
+
+  <div class="card rounded-2xl p-8">
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">Product Name *</label>
+        <input type="text" name="name" required value="{{ product.name if product else '' }}"
+               placeholder="e.g. Ghanaian Salon Social Media Pack"
+               class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+               style="color:var(--text-primary)"/>
+      </div>
+
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">Description</label>
+        <textarea name="description" rows="4" placeholder="Describe what the buyer gets..."
+                  class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500 resize-none"
+                  style="color:var(--text-primary)">{{ product.description if product else '' }}</textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">Price (GHS) *</label>
+          <input type="number" name="price" required step="0.01" min="0"
+                 value="{{ product.price if product else '' }}" placeholder="300.00"
+                 class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+                 style="color:var(--text-primary)"/>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">
+            Referral Commission (%)
+          </label>
+          <div class="relative">
+            <input type="number" name="referral_commission_pct" step="0.1" min="0" max="100"
+                   value="{{ product.referral_commission_pct if product else '0' }}" placeholder="20"
+                   class="w-full card px-4 py-3 pr-10 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+                   style="color:var(--text-primary)"
+                   id="comm-pct"/>
+            <span class="absolute right-3 top-3 text-muted text-sm font-bold">%</span>
+          </div>
+          <!-- Live preview of GHS amount -->
+          <p class="text-xs text-gold-500 mt-1" id="comm-preview">
+            = GHS 0.00 per referral
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">Category</label>
+        <select name="category_id"
+                class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+                style="color:var(--text-primary)">
+          <option value="">No Category</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if product and product.category_id == cat.id %}selected{% endif %}>
+            {{ cat.icon }} {{ cat.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">Preview Image</label>
+        {% if product and product.preview_image %}
+        <div class="mb-3">
+          <img src="{{ url_for('static', filename=product.preview_image) }}"
+               class="w-32 h-20 object-cover rounded-xl border border-themed"/>
+        </div>
+        {% endif %}
+        <input type="file" name="preview_image" accept="image/*"
+               class="w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-gold-500/10 file:text-gold-500 hover:file:bg-gold-500/20"/>
+        <p class="text-xs text-muted mt-1">Thumbnail shown to buyers on the store</p>
+      </div>
+
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">Delivery Content *</label>
+        <textarea name="delivery_content" rows="3"
+                  placeholder="Paste the Canva template link or download URL here. This is only revealed after payment."
+                  class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500 resize-none font-mono"
+                  style="color:var(--text-primary)">{{ product.delivery_content if product else '' }}</textarea>
+        <p class="text-xs text-muted mt-1">🔒 Hidden from buyers until payment is confirmed</p>
+      </div>
+
+      <div class="flex gap-6">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="is_featured" {% if product and product.is_featured %}checked{% endif %}
+                 class="w-4 h-4 accent-gold-500"/>
+          <span class="text-sm text-muted">Featured on homepage</span>
+        </label>
+        {% if product %}
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="is_active" {% if product.is_active %}checked{% endif %}
+                 class="w-4 h-4 accent-gold-500"/>
+          <span class="text-sm text-muted">Active (visible in store)</span>
+        </label>
+        {% endif %}
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="btn-gold px-6 py-3 rounded-xl font-bold shadow-gold">
+          {% if product %}Save Changes{% else %}Create Product{% endif %}
+        </button>
+        <a href="{{ url_for('admin.products') }}"
+           class="card px-6 py-3 rounded-xl text-sm font-semibold text-muted hover:text-gold-500 transition-colors">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Live GHS preview as you type
+const priceInput = document.querySelector('input[name="price"]');
+const pctInput = document.getElementById('comm-pct');
+const preview = document.getElementById('comm-preview');
+
+function updatePreview() {
+  const price = parseFloat(priceInput.value) || 0;
+  const pct = parseFloat(pctInput.value) || 0;
+  const ghs = (price * pct / 100).toFixed(2);
+  preview.textContent = `= GHS ${ghs} per referral sale`;
+}
+
+priceInput.addEventListener('input', updatePreview);
+pctInput.addEventListener('input', updatePreview);
+updatePreview();
+</script>
+{% endblock %}

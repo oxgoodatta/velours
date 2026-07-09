@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" id="html-root" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Outfit (display) + Inter (body) — clean, modern, no serifs -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy:  { DEFAULT: '#0D1B2A', 50: '#e8ecf0', 100: '#c5cfd8', 200: '#8fa3b3', 300: '#4a6480', 400: '#1a2d42', 500: '#0D1B2A', 600: '#091420', 700: '#060e17' },
+            gold:  { 100: '#f5e6c0', 200: '#e8c97a', 300: '#d4aa4a', DEFAULT: '#C9A84C', 400: '#C9A84C', 500: '#B8962E', 600: '#9a7a22', 700: '#7a5f18' },
+            onyx:  { DEFAULT: '#0a0a0b', 100: '#111113', 200: '#18181b', 300: '#1f1f23' },
+          },
+          fontFamily: {
+            sans:    ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          boxShadow: {
+            'gold':    '0 4px 20px rgba(201,168,76,0.20)',
+            'gold-lg': '0 8px 40px rgba(201,168,76,0.28)',
+            'luxury':  '0 2px 40px rgba(13,27,42,0.18)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+
+    /* ── LIGHT MODE ──────────────────────────────────────────────── */
+    :root {
+      --bg-primary:   #f0f0f0;
+      --bg-card:      #ffffff;
+      --bg-nav:       rgba(255,255,255,0.94);
+      --border:       #e0e0e0;
+      --text-primary: #0D1B2A;
+      --text-muted:   #5a6a7a;
+      --gold:         #C9A84C;
+      --gold-hover:   #B8962E;
+      --gold-glow:    rgba(201,168,76,0.22);
+      --nav-shadow:   0 1px 4px rgba(13,27,42,0.10);
+    }
+
+    /* ── DARK MODE ───────────────────────────────────────────────── */
+    .dark {
+      --bg-primary:   #0a0a0b;
+      --bg-card:      #111113;
+      --bg-nav:       rgba(10,10,11,0.95);
+      --border:       #1e1e22;
+      --text-primary: #f0ece0;
+      --text-muted:   #6b7280;
+      --gold:         #C9A84C;
+      --gold-hover:   #d4aa4a;
+      --gold-glow:    rgba(201,168,76,0.18);
+      --nav-shadow:   0 1px 8px rgba(0,0,0,0.70);
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── UTILITY CLASSES ─────────────────────────────────────────── */
+    .card      { background: var(--bg-card); border: 1px solid var(--border); }
+    .text-muted { color: var(--text-muted); }
+    .nav-bg    { background: var(--bg-nav); box-shadow: var(--nav-shadow); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .border-themed { border-color: var(--border); }
+    .text-accent   { color: var(--gold); }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #C9A84C 0%, #d4aa4a 50%, #B8962E 100%);
+      color: #0D1B2A;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      transition: all 0.25s ease;
+      box-shadow: 0 2px 12px rgba(201,168,76,0.25);
+    }
+    .btn-gold:hover {
+      background: linear-gradient(135deg, #d4aa4a 0%, #e0b850 50%, #C9A84C 100%);
+      box-shadow: 0 4px 20px rgba(201,168,76,0.40);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline-gold {
+      border: 1.5px solid var(--gold);
+      color: var(--gold);
+      font-weight: 600;
+      transition: all 0.25s ease;
+    }
+    .btn-outline-gold:hover {
+      background: var(--gold);
+      color: #0D1B2A;
+    }
+
+    /* Card hover */
+    .card-hover { transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease; }
+    .card-hover:hover { transform: translateY(-4px); border-color: rgba(201,168,76,0.45); }
+    .dark .card-hover:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.55); }
+
+    /* Gold divider line */
+    .gold-line { height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+
+    /* Fade in animation */
+    .fade-in { animation: fadeUp 0.38s cubic-bezier(0.22,1,0.36,1) both; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+
+    /* Nav underline accent */
+    .nav-link { position: relative; }
+    .nav-link::after {
+      content:''; position:absolute; bottom:-3px; left:0; right:0;
+      height:1.5px; background:var(--gold);
+      transform:scaleX(0); transition:transform 0.2s ease; transform-origin:center;
+    }
+    .nav-link:hover::after, .nav-link.active::after { transform:scaleX(1); }
+
+    /* Theme toggle pill */
+    .theme-pill {
+      width:40px; height:22px; background:var(--border);
+      border-radius:11px; position:relative; cursor:pointer;
+      transition:background 0.3s; border:1px solid var(--border);
+    }
+    .theme-pill.dark-on { background:var(--gold); border-color:var(--gold); }
+    .theme-pill-dot {
+      width:16px; height:16px; background:#fff;
+      border-radius:50%; position:absolute; top:2px; left:2px;
+      transition:transform 0.3s; box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    }
+    .theme-pill.dark-on .theme-pill-dot { transform:translateX(18px); background:#0D1B2A; }
+
+    .font-display-italic { font-family:'Outfit', sans-serif; font-style:normal; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+<script>
+  /* Auto theme: dark 7pm–6am, light otherwise. User override persists. */
+  (function(){
+    var stored = localStorage.getItem('velours_theme');
+    var hour = new Date().getHours();
+    var auto = (hour >= 19 || hour < 6) ? 'dark' : 'light';
+    var theme = stored || auto;
+    if(theme==='dark') document.documentElement.classList.add('dark');
+  })();
+</script>
+
+<!-- ── NAVBAR ──────────────────────────────────────────────────────── -->
+<nav class="nav-bg sticky top-0 z-50 border-b border-themed">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Logo -->
+      <a href="{{ url_for('store.index') }}" class="flex items-center gap-2.5 group">
+        <img src="{{ url_for('static', filename='img/logo.png') }}"
+             alt="{{ APP_NAME }}"
+             class="h-20 w-auto object-contain"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"/>
+        <!-- Fallback text logo if image not found -->
+        <div class="hidden h-9 w-9 rounded-lg items-center justify-center"
+             style="background:linear-gradient(135deg,#0D1B2A,#1a2d42); border:1px solid rgba(201,168,76,0.4)">
+          <span class="font-display font-bold text-lg" style="color:#C9A84C">V</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <div class="hidden md:flex items-center gap-7">
+        <a href="{{ url_for('store.shop') }}"
+           class="nav-link text-sm font-medium text-muted hover:text-accent transition-colors pb-0.5
+           {% if request.endpoint == 'store.shop' %}active{% endif %}">Shop</a>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard.index') }}"
+           class="nav-link text-sm font-medium text-muted hover:text-accent transition-colors pb-0.5
+           {% if request.endpoint and 'dashboard' in request.endpoint %}active{% endif %}">Dashboard</a>
+        {% endif %}
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        <a href="{{ url_for('admin.dashboard') }}"
+           class="text-xs font-semibold uppercase tracking-widest transition-colors"
+           style="color:var(--gold)">⚙ Admin</a>
+        {% endif %}
+      </div>
+
+      <!-- Right -->
+      <div class="flex items-center gap-3">
+        <!-- Theme toggle -->
+        <div id="theme-toggle" class="theme-pill" onclick="toggleTheme()" title="Toggle theme">
+          <div class="theme-pill-dot"></div>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <div class="relative" x-data="{ open:false }">
+          <button @click="open=!open"
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-themed hover:border-gold-400 transition-all"
+                  style="border-color:var(--border)">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center"
+                 style="background:linear-gradient(135deg,#C9A84C,#B8962E)">
+              <span class="text-navy font-bold text-xs">{{ current_user.name[0].upper() }}</span>
+            </div>
+            <span class="text-sm font-medium hidden sm:block" style="color:var(--text-primary)">
+              {{ current_user.name.split()[0] }}
+            </span>
+            <svg class="w-3.5 h-3.5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div x-show="open" @click.away="open=false" x-cloak x-transition
+               class="absolute right-0 mt-2 w-52 card rounded-2xl shadow-luxury py-1 z-50">
+            <div class="px-4 py-3 border-b border-themed">
+              <p class="text-xs font-bold" style="color:var(--text-primary)">{{ current_user.name }}</p>
+              <p class="text-xs text-muted truncate">{{ current_user.email }}</p>
+              <p class="text-xs font-semibold mt-1" style="color:var(--gold)">
+                Wallet: GHS {{ '%.2f'|format(current_user.wallet_balance) }}
+              </p>
+            </div>
+            <a href="{{ url_for('dashboard.index') }}"
+               class="block px-4 py-2.5 text-sm text-muted hover:text-accent transition-colors">My Dashboard</a>
+            <a href="{{ url_for('auth.logout') }}"
+               class="block px-4 py-2.5 text-sm text-red-500 hover:text-red-400 transition-colors">Sign out</a>
+          </div>
+        </div>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}"
+           class="text-sm font-medium text-muted hover:text-accent transition-colors">Sign in</a>
+        <a href="{{ url_for('auth.register') }}"
+           class="btn-gold px-4 py-2 rounded-xl text-sm">Join Free</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── FLASH MESSAGES ──────────────────────────────────────────────── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="max-w-7xl mx-auto px-4 pt-4 space-y-2">
+  {% for category, message in messages %}
+  <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border
+    {% if category == 'error' %}bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900
+    {% elif category == 'success' %}bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900
+    {% else %}bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- ── MAIN ────────────────────────────────────────────────────────── -->
+<main>{% block content %}{% endblock %}</main>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────── -->
+<footer class="border-t border-themed mt-20" style="background:var(--bg-card)">
+  <div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="flex items-center gap-3">
+        <img src="{{ url_for('static', filename='img/logo.png') }}"
+             alt="{{ APP_NAME }}" class="h-12 w-auto object-contain"
+             onerror="this.style.display='none'"/>
+        <p class="text-xs text-muted">{{ APP_TAGLINE }}</p>
+      </div>
+      <div class="gold-line w-full md:hidden"></div>
+      <div class="flex gap-6 text-sm text-muted">
+        <a href="#" class="hover:text-accent transition-colors">Terms</a>
+        <a href="#" class="hover:text-accent transition-colors">Privacy</a>
+        <a href="#" class="hover:text-accent transition-colors">Contact</a>
+      </div>
+    </div>
+    <div class="gold-line mt-8 mb-4"></div>
+    <p class="text-center text-xs text-muted">© {{ APP_NAME }} {{ 2026 }}. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+  function toggleTheme(){
+    var isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('velours_theme', isDark ? 'dark' : 'light');
+    updatePill(isDark);
+  }
+  function updatePill(isDark){
+    var pill = document.getElementById('theme-toggle');
+    if(pill){ isDark ? pill.classList.add('dark-on') : pill.classList.remove('dark-on'); }
+  }
+  updatePill(document.documentElement.classList.contains('dark'));
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

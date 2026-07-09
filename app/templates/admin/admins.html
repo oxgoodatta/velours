@@ -1,0 +1,64 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Admin Accounts — {{ APP_NAME }}{% endblock %}
+{% block admin_content %}
+<div class="max-w-2xl fade-in">
+  <h1 class="font-display text-2xl font-bold mb-8" style="color:var(--text-primary)">Admin Accounts</h1>
+
+  <!-- Current Admins -->
+  <div class="card rounded-2xl overflow-hidden mb-8">
+    <div class="px-6 py-4 border-b border-themed">
+      <h2 class="font-semibold" style="color:var(--text-primary)">Current Admins</h2>
+    </div>
+    {% for admin in admins %}
+    <div class="flex items-center justify-between px-6 py-4 border-b border-themed last:border-0">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-gold-500 flex items-center justify-center">
+          <span class="text-blueblack font-black text-sm">{{ admin.name[0].upper() }}</span>
+        </div>
+        <div>
+          <p class="font-semibold text-sm" style="color:var(--text-primary)">{{ admin.name }}</p>
+          <p class="text-xs text-muted">{{ admin.email }}</p>
+        </div>
+      </div>
+      <div class="flex gap-2 items-center">
+        <span class="text-xs bg-gold-500/10 text-gold-500 border border-gold-500/30 px-2 py-0.5 rounded-full font-bold">Admin</span>
+        {% if admin.id != current_user.id %}
+        <form method="POST" action="{{ url_for('admin.remove_admin', id=admin.id) }}"
+              onsubmit="return confirm('Remove admin access from {{ admin.name }}?')">
+          <button class="text-xs bg-red-500/10 text-red-500 px-3 py-1 rounded-lg hover:bg-red-500/20 font-medium">Remove</button>
+        </form>
+        {% else %}
+        <span class="text-xs text-muted">(you)</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Change Password -->
+  <div class="card rounded-2xl p-6 mb-8">
+    <h2 class="font-semibold mb-4" style="color:var(--text-primary)">Change Your Password</h2>
+    <form method="POST" action="{{ url_for('admin.change_password') }}" class="space-y-4">
+      <input type="password" name="current_password" placeholder="Current password" required
+             class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+             style="color:var(--text-primary)"/>
+      <input type="password" name="new_password" placeholder="New password" required
+             class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+             style="color:var(--text-primary)"/>
+      <button type="submit" class="btn-gold px-6 py-2.5 rounded-xl text-sm font-bold shadow-gold">Update Password</button>
+    </form>
+  </div>
+
+  <!-- Make User Admin (by email) -->
+  <div class="card rounded-2xl p-6">
+    <h2 class="font-semibold mb-1" style="color:var(--text-primary)">Promote User to Admin</h2>
+    <p class="text-xs text-muted mb-4">The user must already have an account on the platform.</p>
+    <form method="POST" action="{{ url_for('admin.promote_admin') }}" class="flex gap-3">
+      <input type="email" name="email" placeholder="User's email address" required
+             class="flex-1 card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+             style="color:var(--text-primary)"/>
+      <button type="submit" class="btn-gold px-5 py-3 rounded-xl text-sm font-bold shadow-gold">Promote</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

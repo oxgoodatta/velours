@@ -1,0 +1,71 @@
+<!-- SHOP PAGE -->
+{% extends 'base.html' %}
+{% block title %}Shop — {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-10">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 class="font-display text-3xl font-bold" style="color:var(--text-primary)">
+        {% if current_category %}{{ current_category.name }}
+        {% elif search %}Results for "{{ search }}"
+        {% else %}All Products{% endif %}
+      </h1>
+      <p class="text-sm text-muted mt-1">{{ products.total }} products</p>
+    </div>
+    <form method="GET" action="{{ url_for('store.shop') }}" class="flex gap-2">
+      <input type="text" name="q" value="{{ search }}" placeholder="Search…"
+             class="card px-4 py-2 rounded-xl text-sm w-44 focus:outline-none focus:border-gold-500 transition-colors"
+             style="color:var(--text-primary)"/>
+      <button type="submit" class="btn-gold px-4 py-2 rounded-xl text-sm">Search</button>
+    </form>
+  </div>
+  <div class="flex gap-8">
+    <aside class="hidden md:block w-44 flex-shrink-0">
+      <p class="text-xs font-bold text-muted uppercase tracking-wider mb-3">Categories</p>
+      <ul class="space-y-1">
+        <li><a href="{{ url_for('store.shop') }}"
+               class="block px-3 py-2 rounded-xl text-sm transition-colors font-medium
+               {% if not current_category %}text-gold-500 bg-gold-500/10{% else %}text-muted hover:text-gold-500{% endif %}">
+          All Products
+        </a></li>
+        {% for cat in categories %}
+        <li><a href="{{ url_for('store.shop', category=cat.slug) }}"
+               class="block px-3 py-2 rounded-xl text-sm transition-colors
+               {% if current_category and current_category.id == cat.id %}font-semibold bg-gold-500/10{% else %}text-muted hover:text-gold-500{% endif %}"
+               style="{% if current_category and current_category.id == cat.id %}color:var(--gold){% endif %}">
+          {{ cat.name }}
+        </a></li>
+        {% endfor %}
+      </ul>
+    </aside>
+    <div class="flex-1">
+      {% if products.items %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {% for product in products.items %}{% include 'store/_product_card.html' %}{% endfor %}
+      </div>
+      {% if products.pages > 1 %}
+      <div class="flex justify-center gap-2 mt-10">
+        {% for p in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+          <a href="{{ url_for('store.shop', page=p, category=current_category.slug if current_category else '', q=search) }}"
+             class="w-9 h-9 flex items-center justify-center rounded-xl text-sm font-semibold transition-colors
+             {% if p == products.page %}btn-gold{% else %}card text-muted hover:border-gold-500/50{% endif %}">
+            {{ p }}
+          </a>
+          {% else %}
+          <span class="w-9 h-9 flex items-center justify-center text-muted">…</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="text-center py-24">
+        <p class="text-5xl mb-4">🛍️</p>
+        <h3 class="font-display text-xl font-bold mb-2" style="color:var(--text-primary)">Nothing here yet</h3>
+        <p class="text-muted text-sm">Try a different category or search term.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

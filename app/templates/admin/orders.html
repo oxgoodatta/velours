@@ -1,0 +1,56 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Orders — {{ APP_NAME }}{% endblock %}
+{% block admin_content %}
+<div class="fade-in">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Orders</h1>
+    <div class="flex gap-2">
+      {% for s, label in [('', 'All'), ('pending', 'Pending'), ('paid', 'Paid'), ('failed', 'Failed')] %}
+      <a href="{{ url_for('admin.orders', status=s) }}"
+         class="text-xs px-3 py-1.5 rounded-xl font-semibold transition-colors
+         {% if status_filter == s %}btn-gold{% else %}card text-muted hover:text-gold-500{% endif %}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card rounded-2xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead style="background:var(--bg-primary)">
+        <tr>
+          {% for h in ['Reference', 'Buyer', 'Product', 'Amount', 'MoMo', 'Status', 'Date', 'Action'] %}
+          <th class="px-4 py-3 text-left text-xs font-bold text-muted uppercase tracking-wider">{{ h }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-themed">
+        {% for o in orders %}
+        <tr class="hover:bg-gold-500/3 transition-colors">
+          <td class="px-4 py-3 font-mono text-[10px] text-muted">{{ o.reference }}</td>
+          <td class="px-4 py-3"><p class="text-xs font-medium" style="color:var(--text-primary)">{{ o.buyer.name }}</p><p class="text-[10px] text-muted">{{ o.buyer.email }}</p></td>
+          <td class="px-4 py-3 text-xs text-muted max-w-[120px] truncate">{{ o.product.name }}</td>
+          <td class="px-4 py-3 font-black text-gold-500 text-sm">GHS {{ '%.0f'|format(o.amount) }}</td>
+          <td class="px-4 py-3 text-[10px] text-muted">{{ o.momo_network or '—' }}<br>{{ o.momo_phone or '' }}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold
+              {% if o.status == 'paid' %}bg-green-500/10 text-green-500
+              {% elif o.status == 'pending' %}bg-gold-500/10 text-gold-500
+              {% else %}bg-red-500/10 text-red-500{% endif %}">{{ o.status }}</span>
+          </td>
+          <td class="px-4 py-3 text-[10px] text-muted">{{ o.created_at.strftime('%d %b %Y') }}</td>
+          <td class="px-4 py-3">
+            {% if o.status == 'pending' %}
+            <form method="POST" action="{{ url_for('admin.confirm_order', reference=o.reference) }}">
+              <button class="text-xs btn-gold px-3 py-1.5 rounded-lg font-bold">Confirm</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="px-5 py-16 text-center text-muted">No orders found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
