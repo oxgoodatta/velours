@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Search — {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+  <div class="mb-10">
+    <h1 class="font-display text-4xl font-bold mb-6" style="color:var(--text-primary)">
+      {% if q %}Results for "{{ q }}"{% else %}Search{% endif %}
+    </h1>
+    <form action="{{ url_for('store.search') }}" method="GET" class="flex gap-3 max-w-lg">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search products…"
+             class="card flex-1 px-4 py-3 rounded-xl text-sm focus:outline-none"
+             style="color:var(--text-primary)"
+             onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''"/>
+      <button type="submit" class="btn-gold px-6 py-3 rounded-xl text-sm font-semibold">Search</button>
+    </form>
+  </div>
+  <div class="gold-line mb-10"></div>
+  {% if products and products.items %}
+  <p class="text-muted text-sm mb-6">{{ products.total }} results found</p>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    {% for product in products.items %}{% include 'store/_product_card.html' %}{% endfor %}
+  </div>
+  {% elif q %}
+  <div class="text-center py-20 text-muted">
+    <p class="text-4xl mb-4">🔍</p>
+    <p class="font-display text-xl font-bold mb-2" style="color:var(--text-primary)">No results for "{{ q }}"</p>
+    <p class="text-sm">Try a different search term.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

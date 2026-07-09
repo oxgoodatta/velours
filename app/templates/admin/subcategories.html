@@ -1,0 +1,71 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Subcategories — {{ APP_NAME }}{% endblock %}
+{% block admin_content %}
+<div class="fade-in">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text-primary)">Subcategories</h1>
+    <a href="{{ url_for('admin.create_subcategory') }}" class="btn-gold px-5 py-2.5 rounded-xl text-sm font-bold shadow-gold">+ New Subcategory</a>
+  </div>
+
+  <!-- Group by category -->
+  {% for cat in categories %}
+  {% set cat_subs = subcategories | selectattr('category_id', 'equalto', cat.id) | list %}
+  {% if cat_subs %}
+  <div class="mb-8">
+    <h2 class="font-display font-bold text-base mb-3 px-1" style="color:var(--gold)">{{ cat.name }}</h2>
+    <div class="card rounded-2xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead style="background:var(--bg-primary)">
+          <tr>
+            {% for h in ['Subcategory', 'Products', 'Actions'] %}
+            <th class="px-5 py-3 text-left text-xs font-bold text-muted uppercase tracking-wider">{{ h }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-themed">
+          {% for sub in cat_subs %}
+          <tr class="hover:bg-gold-500/3 transition-colors">
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-3">
+                {% if sub.cover %}
+                <img src="{{ url_for('static', filename=sub.cover) }}" class="w-12 h-10 rounded-xl object-cover"/>
+                {% else %}
+                <div class="w-12 h-10 rounded-xl flex items-center justify-center"
+                     style="background: linear-gradient(135deg, #0D1B2A, #1a2d42)">
+                  <span class="text-xs font-bold" style="color:#C9A84C">{{ sub.name[0] }}</span>
+                </div>
+                {% endif %}
+                <div>
+                  <p class="font-semibold text-sm" style="color:var(--text-primary)">{{ sub.name }}</p>
+                  {% if sub.description %}<p class="text-xs text-muted">{{ sub.description }}</p>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="px-5 py-4 text-muted text-sm">{{ sub.active_products|length }}</td>
+            <td class="px-5 py-4">
+              <div class="flex gap-2">
+                <a href="{{ url_for('admin.edit_subcategory', id=sub.id) }}"
+                   class="text-xs card px-3 py-1.5 rounded-lg text-muted hover:text-accent transition-colors font-medium">Edit</a>
+                <form method="POST" action="{{ url_for('admin.delete_subcategory', id=sub.id) }}"
+                      onsubmit="return confirm('Delete this subcategory?')">
+                  <button class="text-xs bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-500/20 font-medium">Del</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  {% if not subcategories %}
+  <div class="text-center py-16 text-muted">
+    <p class="text-3xl mb-2">📂</p>
+    No subcategories yet. <a href="{{ url_for('admin.create_subcategory') }}" class="hover:underline" style="color:var(--gold)">Create one →</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,71 +1,85 @@
-<!-- SHOP PAGE -->
 {% extends 'base.html' %}
 {% block title %}Shop — {{ APP_NAME }}{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-10">
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+<div class="max-w-7xl mx-auto px-4 py-12">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
     <div>
-      <h1 class="font-display text-3xl font-bold" style="color:var(--text-primary)">
-        {% if current_category %}{{ current_category.name }}
-        {% elif search %}Results for "{{ search }}"
-        {% else %}All Products{% endif %}
-      </h1>
-      <p class="text-sm text-muted mt-1">{{ products.total }} products</p>
+      <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color:var(--gold)">Browse</p>
+      <h1 class="font-display text-4xl font-bold" style="color:var(--text-primary)">All Categories</h1>
     </div>
-    <form method="GET" action="{{ url_for('store.shop') }}" class="flex gap-2">
-      <input type="text" name="q" value="{{ search }}" placeholder="Search…"
-             class="card px-4 py-2 rounded-xl text-sm w-44 focus:outline-none focus:border-gold-500 transition-colors"
-             style="color:var(--text-primary)"/>
-      <button type="submit" class="btn-gold px-4 py-2 rounded-xl text-sm">Search</button>
+    <!-- Search -->
+    <form action="{{ url_for('store.search') }}" method="GET" class="flex gap-2">
+      <input type="text" name="q" placeholder="Search products…"
+             class="card px-4 py-2.5 rounded-xl text-sm w-52 focus:outline-none transition-colors"
+             style="color:var(--text-primary)"
+             onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''"/>
+      <button type="submit" class="btn-gold px-4 py-2.5 rounded-xl text-sm font-semibold">Search</button>
     </form>
   </div>
-  <div class="flex gap-8">
-    <aside class="hidden md:block w-44 flex-shrink-0">
-      <p class="text-xs font-bold text-muted uppercase tracking-wider mb-3">Categories</p>
-      <ul class="space-y-1">
-        <li><a href="{{ url_for('store.shop') }}"
-               class="block px-3 py-2 rounded-xl text-sm transition-colors font-medium
-               {% if not current_category %}text-gold-500 bg-gold-500/10{% else %}text-muted hover:text-gold-500{% endif %}">
-          All Products
-        </a></li>
-        {% for cat in categories %}
-        <li><a href="{{ url_for('store.shop', category=cat.slug) }}"
-               class="block px-3 py-2 rounded-xl text-sm transition-colors
-               {% if current_category and current_category.id == cat.id %}font-semibold bg-gold-500/10{% else %}text-muted hover:text-gold-500{% endif %}"
-               style="{% if current_category and current_category.id == cat.id %}color:var(--gold){% endif %}">
-          {{ cat.name }}
-        </a></li>
-        {% endfor %}
-      </ul>
-    </aside>
-    <div class="flex-1">
-      {% if products.items %}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {% for product in products.items %}{% include 'store/_product_card.html' %}{% endfor %}
+
+  <div class="gold-line mb-10"></div>
+
+  {% if categories %}
+  <!-- Category folders grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for cat in categories %}
+    <a href="{{ url_for('store.category', cat_slug=cat.slug) }}"
+       class="card card-hover rounded-2xl overflow-hidden group relative">
+
+      <!-- Cover image -->
+      <div class="aspect-video overflow-hidden relative" style="background:var(--bg-primary)">
+        {% if cat.cover %}
+        <img src="{{ url_for('static', filename=cat.cover) }}"
+             alt="{{ cat.name }}"
+             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+        {% else %}
+        <!-- Placeholder when no image yet -->
+        <div class="w-full h-full flex items-center justify-center"
+             style="background: linear-gradient(135deg, #0D1B2A, #1a2d42)">
+          <span class="font-display text-5xl font-bold opacity-20" style="color:#C9A84C">
+            {{ cat.name[0].upper() }}
+          </span>
+        </div>
+        {% endif %}
+
+        <!-- Dark overlay on image -->
+        <div class="absolute inset-0 transition-opacity duration-300"
+             style="background: linear-gradient(to top, rgba(10,10,11,0.80) 0%, rgba(10,10,11,0.20) 60%, transparent 100%)">
+        </div>
+
+        <!-- Folder count badge -->
+        <div class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold"
+             style="background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.4); color:#C9A84C; backdrop-filter:blur(8px)">
+          {{ cat.subcategories|length }} folders
+        </div>
       </div>
-      {% if products.pages > 1 %}
-      <div class="flex justify-center gap-2 mt-10">
-        {% for p in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-          {% if p %}
-          <a href="{{ url_for('store.shop', page=p, category=current_category.slug if current_category else '', q=search) }}"
-             class="w-9 h-9 flex items-center justify-center rounded-xl text-sm font-semibold transition-colors
-             {% if p == products.page %}btn-gold{% else %}card text-muted hover:border-gold-500/50{% endif %}">
-            {{ p }}
-          </a>
-          {% else %}
-          <span class="w-9 h-9 flex items-center justify-center text-muted">…</span>
-          {% endif %}
-        {% endfor %}
+
+      <!-- Info -->
+      <div class="p-5">
+        <h3 class="font-display text-lg font-bold mb-1" style="color:var(--text-primary)">{{ cat.name }}</h3>
+        {% if cat.description %}
+        <p class="text-xs text-muted line-clamp-1 mb-3">{{ cat.description }}</p>
+        {% endif %}
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-muted">{{ cat.total_products }} products</span>
+          <span class="text-xs font-semibold flex items-center gap-1 transition-colors group-hover:underline" style="color:var(--gold)">
+            Browse →
+          </span>
+        </div>
       </div>
-      {% endif %}
-      {% else %}
-      <div class="text-center py-24">
-        <p class="text-5xl mb-4">🛍️</p>
-        <h3 class="font-display text-xl font-bold mb-2" style="color:var(--text-primary)">Nothing here yet</h3>
-        <p class="text-muted text-sm">Try a different category or search term.</p>
-      </div>
-      {% endif %}
-    </div>
+    </a>
+    {% endfor %}
   </div>
+
+  {% else %}
+  <div class="text-center py-24">
+    <p class="text-5xl mb-4">🛍️</p>
+    <h3 class="font-display text-xl font-bold mb-2" style="color:var(--text-primary)">No categories yet</h3>
+    <p class="text-muted text-sm">Check back soon.</p>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

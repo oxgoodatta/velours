@@ -134,7 +134,7 @@
   </div>
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
     {% for cat in categories %}
-    <a href="{{ url_for('store.shop', category=cat.slug) }}"
+    <a href="{{ url_for('store.category', cat_slug=cat.slug) }}"
        class="card card-hover rounded-2xl p-4 text-center group transition-all">
       <p class="font-display font-semibold text-sm tracking-wide" style="color:var(--gold)">{{ cat.name }}</p>
       <p class="text-xs text-muted mt-1">{{ cat.products|selectattr('is_active')|list|length }} items</p>

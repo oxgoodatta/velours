@@ -118,7 +118,9 @@ def products():
 @admin_bp.route('/products/create', methods=['GET', 'POST'])
 @admin_required
 def create_product():
+    from app.models import Subcategory
     categories = Category.query.all()
+    subcategories = Subcategory.query.all()
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         price = float(request.form.get('price', 0))
@@ -138,6 +140,7 @@ def create_product():
             price=price,
             referral_commission_pct=commission_pct,
             category_id=request.form.get('category_id') or None,
+            subcategory_id=request.form.get('subcategory_id') or None,
             delivery_content=request.form.get('delivery_content', '').strip(),
             is_featured=request.form.get('is_featured') == 'on',
         )
@@ -151,20 +154,23 @@ def create_product():
         flash(f'Product "{name}" created.', 'success')
         return redirect(url_for('admin.products'))
 
-    return render_template('admin/product_form.html', product=None, categories=categories)
+    return render_template('admin/product_form.html', product=None, categories=categories, subcategories=subcategories)
 
 
 @admin_bp.route('/products/<int:id>/edit', methods=['GET', 'POST'])
 @admin_required
 def edit_product(id):
+    from app.models import Subcategory
     product = Product.query.get_or_404(id)
     categories = Category.query.all()
+    subcategories = Subcategory.query.all()
     if request.method == 'POST':
         product.name = request.form.get('name', product.name).strip()
         product.description = request.form.get('description', '').strip()
         product.price = float(request.form.get('price', product.price))
         product.referral_commission_pct = float(request.form.get('referral_commission_pct', 0))
         product.category_id = request.form.get('category_id') or None
+        product.subcategory_id = request.form.get('subcategory_id') or None
         product.delivery_content = request.form.get('delivery_content', '').strip()
         product.is_featured = request.form.get('is_featured') == 'on'
         product.is_active = request.form.get('is_active') == 'on'
@@ -176,7 +182,7 @@ def edit_product(id):
         db.session.commit()
         flash('Product updated.', 'success')
         return redirect(url_for('admin.products'))
-    return render_template('admin/product_form.html', product=product, categories=categories)
+    return render_template('admin/product_form.html', product=product, categories=categories, subcategories=subcategories)
 
 
 @admin_bp.route('/products/<int:id>/delete', methods=['POST'])
@@ -305,3 +311,76 @@ def change_password():
         db.session.commit()
         flash('Password updated successfully.', 'success')
     return redirect(url_for('admin.admins'))
+
+
+# ── SUBCATEGORIES ─────────────────────────────────────────────────────────────
+from app.models import Subcategory
+
+@admin_bp.route('/subcategories')
+@admin_required
+def subcategories():
+    all_subs = Subcategory.query.order_by(Subcategory.category_id, Subcategory.name).all()
+    categories = Category.query.all()
+    return render_template('admin/subcategories.html', subcategories=all_subs, categories=categories)
+
+
+@admin_bp.route('/subcategories/create', methods=['GET', 'POST'])
+@admin_required
+def create_subcategory():
+    categories = Category.query.all()
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        category_id = request.form.get('category_id')
+        if not name or not category_id:
+            flash('Name and category are required.', 'error')
+            return render_template('admin/subcategory_form.html', sub=None, categories=categories)
+
+        cat = Category.query.get(category_id)
+        slug = f"{cat.slug}-{slugify(name)}"
+        if Subcategory.query.filter_by(slug=slug).first():
+            slug = f'{slug}-{Subcategory.query.count() + 1}'
+
+        sub = Subcategory(
+            name=name, slug=slug,
+            category_id=category_id,
+            description=request.form.get('description', '').strip()
+        )
+
+        f = request.files.get('cover_image')
+        if f and f.filename and allowed_file(f.filename):
+            sub.cover_image = save_image(f, slug)
+
+        db.session.add(sub)
+        db.session.commit()
+        flash(f'Subcategory "{name}" created.', 'success')
+        return redirect(url_for('admin.subcategories'))
+    return render_template('admin/subcategory_form.html', sub=None, categories=categories)
+
+
+@admin_bp.route('/subcategories/<int:id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_subcategory(id):
+    sub = Subcategory.query.get_or_404(id)
+    categories = Category.query.all()
+    if request.method == 'POST':
+        sub.name = request.form.get('name', sub.name).strip()
+        sub.category_id = request.form.get('category_id', sub.category_id)
+        sub.description = request.form.get('description', '').strip()
+
+        f = request.files.get('cover_image')
+        if f and f.filename and allowed_file(f.filename):
+            sub.cover_image = save_image(f, sub.slug)
+
+        db.session.commit()
+        flash('Subcategory updated.', 'success')
+        return redirect(url_for('admin.subcategories'))
+    return render_template('admin/subcategory_form.html', sub=sub, categories=categories)
+
+
+@admin_bp.route('/subcategories/<int:id>/delete', methods=['POST'])
+@admin_required
+def delete_subcategory(id):
+    db.session.delete(Subcategory.query.get_or_404(id))
+    db.session.commit()
+    flash('Subcategory deleted.', 'success')
+    return redirect(url_for('admin.subcategories'))

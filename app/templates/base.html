@@ -72,10 +72,9 @@
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    /* ── UTILITY CLASSES ─────────────────────────────────────────── */
-    .card      { background: var(--bg-card); border: 1px solid var(--border); }
+    .card       { background: var(--bg-card); border: 1px solid var(--border); }
     .text-muted { color: var(--text-muted); }
-    .nav-bg    { background: var(--bg-nav); box-shadow: var(--nav-shadow); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .nav-bg     { background: var(--bg-nav); box-shadow: var(--nav-shadow); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
     .border-themed { border-color: var(--border); }
     .text-accent   { color: var(--gold); }
 
@@ -104,19 +103,15 @@
       color: #0D1B2A;
     }
 
-    /* Card hover */
     .card-hover { transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease; }
     .card-hover:hover { transform: translateY(-4px); border-color: rgba(201,168,76,0.45); }
     .dark .card-hover:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.55); }
 
-    /* Gold divider line */
     .gold-line { height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 
-    /* Fade in animation */
     .fade-in { animation: fadeUp 0.38s cubic-bezier(0.22,1,0.36,1) both; }
     @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
 
-    /* Nav underline accent */
     .nav-link { position: relative; }
     .nav-link::after {
       content:''; position:absolute; bottom:-3px; left:0; right:0;
@@ -125,7 +120,6 @@
     }
     .nav-link:hover::after, .nav-link.active::after { transform:scaleX(1); }
 
-    /* Theme toggle pill */
     .theme-pill {
       width:40px; height:22px; background:var(--border);
       border-radius:11px; position:relative; cursor:pointer;
@@ -146,7 +140,6 @@
 
 <body>
 <script>
-  /* Auto theme: dark 7pm–6am, light otherwise. User override persists. */
   (function(){
     var stored = localStorage.getItem('velours_theme');
     var hour = new Date().getHours();
@@ -159,15 +152,14 @@
 <!-- ── NAVBAR ──────────────────────────────────────────────────────── -->
 <nav class="nav-bg sticky top-0 z-50 border-b border-themed">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16">
+    <div class="flex items-center justify-between h-20">
 
       <!-- Logo -->
       <a href="{{ url_for('store.index') }}" class="flex items-center gap-2.5 group">
         <img src="{{ url_for('static', filename='img/logo.png') }}"
              alt="{{ APP_NAME }}"
-             class="h-20 w-auto object-contain"
+             class="h-16 w-auto object-contain"
              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"/>
-        <!-- Fallback text logo if image not found -->
         <div class="hidden h-9 w-9 rounded-lg items-center justify-center"
              style="background:linear-gradient(135deg,#0D1B2A,#1a2d42); border:1px solid rgba(201,168,76,0.4)">
           <span class="font-display font-bold text-lg" style="color:#C9A84C">V</span>
@@ -179,21 +171,22 @@
         <a href="{{ url_for('store.shop') }}"
            class="nav-link text-sm font-medium text-muted hover:text-accent transition-colors pb-0.5
            {% if request.endpoint == 'store.shop' %}active{% endif %}">Shop</a>
+
         {% if current_user.is_authenticated %}
-        <a href="{{ url_for('dashboard.index') }}"
-           class="nav-link text-sm font-medium text-muted hover:text-accent transition-colors pb-0.5
-           {% if request.endpoint and 'dashboard' in request.endpoint %}active{% endif %}">Dashboard</a>
-        {% endif %}
-        {% if current_user.is_authenticated and current_user.is_admin %}
-        <a href="{{ url_for('admin.dashboard') }}"
-           class="text-xs font-semibold uppercase tracking-widest transition-colors"
-           style="color:var(--gold)">⚙ Admin</a>
+          {% if current_user.is_admin %}
+          <a href="{{ url_for('admin.dashboard') }}"
+             class="nav-link text-sm font-medium text-muted hover:text-accent transition-colors pb-0.5
+             {% if request.endpoint and 'admin' in request.endpoint %}active{% endif %}">Admin Panel</a>
+          {% else %}
+          <a href="{{ url_for('dashboard.index') }}"
+             class="nav-link text-sm font-medium text-muted hover:text-accent transition-colors pb-0.5
+             {% if request.endpoint == 'dashboard.index' %}active{% endif %}">Dashboard</a>
+          {% endif %}
         {% endif %}
       </div>
 
       <!-- Right -->
       <div class="flex items-center gap-3">
-        <!-- Theme toggle -->
         <div id="theme-toggle" class="theme-pill" onclick="toggleTheme()" title="Toggle theme">
           <div class="theme-pill-dot"></div>
         </div>
@@ -223,8 +216,13 @@
                 Wallet: GHS {{ '%.2f'|format(current_user.wallet_balance) }}
               </p>
             </div>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}"
+               class="block px-4 py-2.5 text-sm text-muted hover:text-accent transition-colors">Admin Panel</a>
+            {% else %}
             <a href="{{ url_for('dashboard.index') }}"
                class="block px-4 py-2.5 text-sm text-muted hover:text-accent transition-colors">My Dashboard</a>
+            {% endif %}
             <a href="{{ url_for('auth.logout') }}"
                class="block px-4 py-2.5 text-sm text-red-500 hover:text-red-400 transition-colors">Sign out</a>
           </div>

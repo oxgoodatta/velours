@@ -1,5 +1,23 @@
 {% extends 'admin/base_admin.html' %}
-{% block title %}{% if product %}Edit{% else %}New{% endif %} Product — {{ APP_NAME }}{% endblock %}
+{% block title %}{% if product %}Edit{% else %}New{% endif %} Product — {{ APP_NAME }}
+<script>
+function filterSubs(catId) {
+  var sel = document.getElementById('sub-select');
+  var opts = sel.querySelectorAll('option');
+  opts.forEach(function(opt) {
+    if (!opt.value) return;
+    opt.style.display = (!catId || opt.dataset.cat === catId) ? '' : 'none';
+  });
+  // Reset selection if current sub doesn't belong to new cat
+  var current = sel.options[sel.selectedIndex];
+  if (current && current.value && current.dataset.cat !== catId) {
+    sel.value = '';
+  }
+}
+// Run on load to filter based on pre-selected category
+filterSubs(document.getElementById('cat-select').value);
+</script>
+{% endblock %}
 
 {% block admin_content %}
 <div class="max-w-2xl fade-in">
@@ -58,16 +76,34 @@
 
       <div>
         <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">Category</label>
-        <select name="category_id"
-                class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
-                style="color:var(--text-primary)">
+        <select name="category_id" id="cat-select"
+                class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none"
+                style="color:var(--text-primary)"
+                onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''"
+                onchange="filterSubs(this.value)">
           <option value="">No Category</option>
           {% for cat in categories %}
           <option value="{{ cat.id }}" {% if product and product.category_id == cat.id %}selected{% endif %}>
-            {{ cat.icon }} {{ cat.name }}
+            {{ cat.name }}
           </option>
           {% endfor %}
         </select>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-wide block mb-1.5">Subcategory (Folder)</label>
+        <select name="subcategory_id" id="sub-select"
+                class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none"
+                style="color:var(--text-primary)"
+                onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''">
+          <option value="">No Subcategory</option>
+          {% for sub in subcategories %}
+          <option value="{{ sub.id }}" data-cat="{{ sub.category_id }}"
+                  {% if product and product.subcategory_id == sub.id %}selected{% endif %}>
+            {{ sub.category.name }} › {{ sub.name }}
+          </option>
+          {% endfor %}
+        </select>
+        <p class="text-xs text-muted mt-1">Select a category first to filter subcategories</p>
       </div>
 
       <div>
@@ -136,5 +172,23 @@ function updatePreview() {
 priceInput.addEventListener('input', updatePreview);
 pctInput.addEventListener('input', updatePreview);
 updatePreview();
+</script>
+
+<script>
+function filterSubs(catId) {
+  var sel = document.getElementById('sub-select');
+  var opts = sel.querySelectorAll('option');
+  opts.forEach(function(opt) {
+    if (!opt.value) return;
+    opt.style.display = (!catId || opt.dataset.cat === catId) ? '' : 'none';
+  });
+  // Reset selection if current sub doesn't belong to new cat
+  var current = sel.options[sel.selectedIndex];
+  if (current && current.value && current.dataset.cat !== catId) {
+    sel.value = '';
+  }
+}
+// Run on load to filter based on pre-selected category
+filterSubs(document.getElementById('cat-select').value);
 </script>
 {% endblock %}

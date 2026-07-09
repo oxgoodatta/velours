@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}{{ subcategory.name }} — {{ APP_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-xs text-muted mb-8">
+    <a href="{{ url_for('store.shop') }}" class="hover:text-accent transition-colors">Shop</a>
+    <span style="color:var(--gold)">›</span>
+    <a href="{{ url_for('store.category', cat_slug=category.slug) }}" class="hover:text-accent transition-colors">{{ category.name }}</a>
+    <span style="color:var(--gold)">›</span>
+    <span style="color:var(--text-primary)">{{ subcategory.name }}</span>
+  </nav>
+
+  <!-- Header -->
+  <div class="mb-10">
+    <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color:var(--gold)">{{ category.name }}</p>
+    <h1 class="font-display text-4xl font-bold" style="color:var(--text-primary)">{{ subcategory.name }}</h1>
+    {% if subcategory.description %}
+    <p class="text-muted text-sm mt-2 max-w-xl">{{ subcategory.description }}</p>
+    {% endif %}
+    <p class="text-xs text-muted mt-2">{{ products.total }} products</p>
+  </div>
+
+  <div class="gold-line mb-10"></div>
+
+  {% if products.items %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    {% for product in products.items %}
+    {% include 'store/_product_card.html' %}
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if products.pages > 1 %}
+  <div class="flex justify-center gap-2 mt-10">
+    {% for p in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+      <a href="{{ url_for('store.subcategory', cat_slug=category.slug, sub_slug=subcategory.slug, page=p) }}"
+         class="w-9 h-9 flex items-center justify-center rounded-xl text-sm font-semibold transition-colors
+         {% if p == products.page %}btn-gold{% else %}card text-muted hover:border-gold-500/50{% endif %}">
+        {{ p }}
+      </a>
+      {% else %}
+      <span class="w-9 h-9 flex items-center justify-center text-muted">…</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="text-center py-24">
+    <p class="text-5xl mb-4">📂</p>
+    <h3 class="font-display text-xl font-bold mb-2" style="color:var(--text-primary)">Nothing here yet</h3>
+    <p class="text-muted text-sm">Products are being added soon.</p>
+    <a href="{{ url_for('store.category', cat_slug=category.slug) }}" class="text-sm font-semibold mt-4 inline-block hover:underline" style="color:var(--gold)">← Back to {{ category.name }}</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

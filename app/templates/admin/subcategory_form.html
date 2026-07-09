@@ -1,0 +1,62 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{% if sub %}Edit{% else %}New{% endif %} Subcategory — {{ APP_NAME }}{% endblock %}
+{% block admin_content %}
+<div class="max-w-lg fade-in">
+  <div class="flex items-center gap-3 mb-8">
+    <a href="{{ url_for('admin.subcategories') }}" class="text-muted hover:text-accent text-sm">← Subcategories</a>
+    <span class="text-muted">/</span>
+    <h1 class="font-display text-2xl font-bold" style="color:var(--text-primary)">
+      {% if sub %}Edit{% else %}New{% endif %} Subcategory
+    </h1>
+  </div>
+  <div class="card rounded-2xl p-8">
+    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-widest block mb-1.5">Parent Category *</label>
+        <select name="category_id" required
+                class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none"
+                style="color:var(--text-primary)"
+                onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''">
+          <option value="">Select category</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if sub and sub.category_id == cat.id %}selected{% endif %}>
+            {{ cat.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-widest block mb-1.5">Subcategory Name *</label>
+        <input type="text" name="name" required value="{{ sub.name if sub else '' }}"
+               placeholder="e.g. Grand Opening"
+               class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none"
+               style="color:var(--text-primary)"
+               onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''"/>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-widest block mb-1.5">Description</label>
+        <textarea name="description" rows="2" placeholder="Brief description..."
+                  class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none resize-none"
+                  style="color:var(--text-primary)"
+                  onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''">{{ sub.description if sub else '' }}</textarea>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-muted uppercase tracking-widest block mb-1.5">Cover Image</label>
+        {% if sub and sub.cover_image %}
+        <img src="{{ url_for('static', filename=sub.cover_image) }}" class="w-24 h-16 object-cover rounded-xl mb-2"/>
+        {% endif %}
+        <input type="file" name="cover_image" accept="image/*"
+               class="w-full text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-gold-500/10 file:text-gold-500 hover:file:bg-gold-500/20"/>
+        <p class="text-xs text-muted mt-1">If empty, the first product's image in this folder will be used automatically</p>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="btn-gold px-6 py-3 rounded-xl font-bold shadow-gold">
+          {% if sub %}Save Changes{% else %}Create Subcategory{% endif %}
+        </button>
+        <a href="{{ url_for('admin.subcategories') }}"
+           class="card px-6 py-3 rounded-xl text-sm font-semibold text-muted hover:text-accent transition-colors">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

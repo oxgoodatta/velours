@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import current_user
-from app.models import Product, Category, Order
+from app.models import Product, Category, Subcategory, Order
 
 store_bp = Blueprint('store', __name__)
 
@@ -15,25 +15,39 @@ def index():
 
 @store_bp.route('/shop')
 def shop():
-    category_slug = request.args.get('category')
-    search = request.args.get('q', '').strip()
-    page = request.args.get('page', 1, type=int)
-
-    query = Product.query.filter_by(is_active=True)
-    cat = None
-
-    if category_slug:
-        cat = Category.query.filter_by(slug=category_slug).first_or_404()
-        query = query.filter_by(category_id=cat.id)
-
-    if search:
-        query = query.filter(Product.name.ilike(f'%{search}%'))
-
-    products = query.order_by(Product.created_at.desc()).paginate(page=page, per_page=12, error_out=False)
+    """Top level — shows all category folders"""
     categories = Category.query.all()
+    return render_template('store/shop.html', categories=categories)
 
-    return render_template('store/shop.html', products=products, categories=categories,
-                           current_category=cat, search=search)
+
+@store_bp.route('/shop/<cat_slug>')
+def category(cat_slug):
+    """Second level — shows subcategory folders inside a category"""
+    cat = Category.query.filter_by(slug=cat_slug).first_or_404()
+    return render_template('store/category.html', category=cat)
+
+
+@store_bp.route('/shop/<cat_slug>/<sub_slug>')
+def subcategory(cat_slug, sub_slug):
+    """Third level — shows all products inside a subcategory"""
+    cat = Category.query.filter_by(slug=cat_slug).first_or_404()
+    sub = Subcategory.query.filter_by(slug=sub_slug, category_id=cat.id).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    products = Product.query.filter_by(
+        subcategory_id=sub.id, is_active=True
+    ).order_by(Product.created_at.desc()).paginate(page=page, per_page=12, error_out=False)
+    return render_template('store/subcategory.html', category=cat, subcategory=sub, products=products)
+
+
+@store_bp.route('/search')
+def search():
+    q = request.args.get('q', '').strip()
+    page = request.args.get('page', 1, type=int)
+    products = Product.query.filter(
+        Product.is_active == True,
+        Product.name.ilike(f'%{q}%')
+    ).paginate(page=page, per_page=12, error_out=False) if q else None
+    return render_template('store/search.html', products=products, q=q)
 
 
 @store_bp.route('/product/<slug>')

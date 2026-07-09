@@ -15,16 +15,12 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
 
-    # Referral system
     referral_code = db.Column(db.String(12), unique=True, nullable=True)
     referral_unlocked = db.Column(db.Boolean, default=False)
-    referral_slots_total = db.Column(db.Integer, default=0)   # total slots earned from purchases
-    referral_slots_used = db.Column(db.Integer, default=0)    # how many referrals consumed
+    referral_slots_total = db.Column(db.Integer, default=0)
+    referral_slots_used = db.Column(db.Integer, default=0)
     referred_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-
-    # Wallet
     wallet_balance = db.Column(db.Float, default=0.0)
-
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     orders = db.relationship('Order', backref='buyer', lazy=True, foreign_keys='Order.user_id')
@@ -49,25 +45,75 @@ class User(UserMixin, db.Model):
         self.referral_code = secrets.token_hex(5).upper()
 
     def add_referral_slots(self, purchase_amount):
-        """GHS 100 = 10 slots, GHS 200 = 20, GHS 300 = 30, etc."""
         slots = int(purchase_amount / 10)
         self.referral_slots_total += slots
         if not self.referral_unlocked:
             self.referral_unlocked = True
 
-    def __repr__(self):
-        return f'<User {self.email}>'
-
 
 class Category(db.Model):
+    """Top-level category e.g. Social Media Templates"""
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     slug = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
     icon = db.Column(db.String(10), default='📦')
+    cover_image = db.Column(db.String(300), nullable=True)  # folder cover image
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    subcategories = db.relationship('Subcategory', backref='category', lazy=True, cascade='all, delete-orphan')
     products = db.relationship('Product', backref='category', lazy=True)
+
+    @property
+    def cover(self):
+        """Returns cover image or first subcategory cover or first product image"""
+        if self.cover_image:
+            return self.cover_image
+        for sub in self.subcategories:
+            if sub.cover_image:
+                return sub.cover_image
+            for p in sub.products:
+                if p.preview_image:
+                    return p.preview_image
+        for p in self.products:
+            if p.preview_image:
+                return p.preview_image
+        return None
+
+    @property
+    def total_products(self):
+        count = len([p for p in self.products if p.is_active])
+        for sub in self.subcategories:
+            count += len([p for p in sub.products if p.is_active])
+        return count
+
+
+class Subcategory(db.Model):
+    """Second-level e.g. Grand Opening, Flash Sale"""
+    __tablename__ = 'subcategories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    slug = db.Column(db.String(150), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    cover_image = db.Column(db.String(300), nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    products = db.relationship('Product', backref='subcategory', lazy=True)
+
+    @property
+    def cover(self):
+        if self.cover_image:
+            return self.cover_image
+        for p in self.products:
+            if p.preview_image:
+                return p.preview_image
+        return None
+
+    @property
+    def active_products(self):
+        return [p for p in self.products if p.is_active]
 
 
 class Product(db.Model):
@@ -77,20 +123,20 @@ class Product(db.Model):
     slug = db.Column(db.String(200), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float, nullable=False)
-    # Commission is now stored as a percentage (e.g. 20 = 20%)
     referral_commission_pct = db.Column(db.Float, default=0.0)
     preview_image = db.Column(db.String(300), nullable=True)
-    delivery_content = db.Column(db.Text, nullable=True)  # revealed after payment
+    delivery_content = db.Column(db.Text, nullable=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategories.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     is_featured = db.Column(db.Boolean, default=False)
     total_sales = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
     orders = db.relationship('Order', backref='product', lazy=True)
 
     @property
     def commission_amount(self):
-        """Returns actual GHS commission from percentage"""
         return round(self.price * self.referral_commission_pct / 100, 2)
 
 
@@ -101,7 +147,7 @@ class Order(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, paid, failed
+    status = db.Column(db.String(20), default='pending')
     referral_code_used = db.Column(db.String(12), nullable=True)
     hubtel_transaction_id = db.Column(db.String(100), nullable=True)
     momo_phone = db.Column(db.String(20), nullable=True)
