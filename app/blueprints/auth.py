@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User
@@ -30,12 +30,11 @@ def register():
         user.set_password(password)
         user.generate_referral_code()
 
-        # Handle referral — only if referrer has slots remaining
+        # Link referrer but DO NOT consume slot yet — slot is consumed on first purchase
         if referral_code:
             referrer = User.query.filter_by(referral_code=referral_code).first()
-            if referrer and referrer.can_refer and referrer.id != user.id:
+            if referrer and referrer.referral_unlocked and referrer.id != user.id:
                 user.referred_by_id = referrer.id
-                referrer.referral_slots_used += 1
 
         db.session.add(user)
         db.session.commit()
@@ -44,6 +43,8 @@ def register():
         return redirect(url_for('store.index'))
 
     referral_code = request.args.get('ref', '')
+    if referral_code:
+        session['ref_code'] = referral_code
     return render_template('auth/register.html', referral_code=referral_code)
 
 

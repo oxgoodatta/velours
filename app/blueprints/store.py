@@ -55,3 +55,15 @@ def product_detail(slug):
     product = Product.query.filter_by(slug=slug, is_active=True).first_or_404()
     ref = request.args.get('ref', '')
     return render_template('store/product.html', product=product, ref=ref)
+
+
+@store_bp.route('/payment/success/<reference>')
+def payment_success(reference):
+    from app.models import Order
+    from flask_login import current_user
+    order = Order.query.filter_by(reference=reference).first_or_404()
+    return render_template("store/payment_success.html",
+                           order=order,
+                           product=order.product,
+                           referral_unlocked_now=True,
+                           slots_added=int(order.amount / 10))

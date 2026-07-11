@@ -1,16 +1,11 @@
 """
-Hubtel Embedded Payment Gateway
-================================
-Uses Hubtel's "Receive Money" (Direct Debit) API.
-- User enters MoMo number + network on YOUR page (no Hubtel redirect)
-- Hubtel sends USSD prompt to user's phone
-- User approves on their phone
-- Hubtel POSTs callback to /payment/callback
-- Your system fulfills the order
+Hubtel Online Checkout API
+===========================
+Endpoint: https://payproxyapi.hubtel.com/items/initiate
+Docs: https://developers.hubtel.com/docs/online-checkout-payments
 
-API Docs: https://developers.hubtel.com
-Credentials from: https://unity.hubtel.com/account/api-accounts-add
-Required: HUBTEL_CLIENT_ID, HUBTEL_CLIENT_SECRET, HUBTEL_MERCHANT_ACCOUNT
+This uses the Onsite Checkout (checkoutDirectUrl) so payment
+happens embedded on your page without a full redirect.
 """
 
 import requests
@@ -24,88 +19,96 @@ def _get_auth_header():
     client_secret = current_app.config['HUBTEL_CLIENT_SECRET']
     credentials = f"{client_id}:{client_secret}"
     encoded = base64.b64encode(credentials.encode()).decode()
-    return {'Authorization': f'Basic {encoded}', 'Content-Type': 'application/json'}
-
-
-def get_hubtel_channel(network: str) -> str:
-    """Maps network name to Hubtel channel string"""
-    mapping = {
-        'MTN': 'mtn-gh',
-        'AirtelTigo': 'aireltigo-gh',
-        'Telecel': 'vodafone-gh',  # Telecel was formerly Vodafone
+    return {
+        'Authorization': f'Basic {encoded}',
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
     }
-    return mapping.get(network, 'mtn-gh')
 
 
-def initiate_momo_payment(amount: float, phone: str, network: str,
-                           reference: str, description: str, customer_name: str,
-                           customer_email: str) -> dict:
-    """
-    Initiates an embedded MoMo payment via Hubtel Direct Debit.
-    Sends USSD prompt to user's phone — no page redirect needed.
-
-    Returns:
-        {'success': True, 'transaction_id': '...'}  on success
-        {'success': False, 'message': '...'}         on failure
-    """
+def initiate_momo_payment(amount, phone, network, reference,
+                           description, customer_name, customer_email):
     merchant_account = current_app.config['HUBTEL_MERCHANT_ACCOUNT']
     callback_url = current_app.config['HUBTEL_CALLBACK_URL']
+    return_url = current_app.config.get('APP_URL', callback_url)
 
     payload = {
-        'CustomerName': customer_name,
-        'CustomerEmail': customer_email,
-        'CustomerMsisdn': phone,           # e.g. 0241234567
-        'Channel': get_hubtel_channel(network),
-        'Amount': amount,
-        'ClientReference': reference,
-        'Description': description,
-        'PrimaryCallbackUrl': callback_url,
-        'SecondaryCallbackUrl': callback_url,
+        'totalAmount': amount,
+        'description': description,
+        'callbackUrl': callback_url,
+        'returnUrl': return_url + '/payment/success-redirect',
+        'merchantAccountNumber': merchant_account,
+        'cancellationUrl': return_url + '/payment/cancelled',
+        'clientReference': reference,
+        'payeeName': customer_name,
+        'payeeMobileNumber': phone,
+        'payeeEmail': customer_email,
     }
 
-    url = f'https://api.hubtel.com/v1/merchantaccount/merchants/{merchant_account}/receive/mobilemoney'
+    url = 'https://payproxyapi.hubtel.com/items/initiate'
+    headers = _get_auth_header()
+
+    print("=== HUBTEL REQUEST ===")
+    print("URL:", url)
+    print("Payload:", payload)
 
     try:
-        response = requests.post(url, json=payload, headers=_get_auth_header(), timeout=30)
-        data = response.json()
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
 
-        if response.status_code in (200, 201) and data.get('ResponseCode') in ('0', 0):
+        print("=== HUBTEL RESPONSE ===")
+        print("Status:", response.status_code)
+        print("Body:", response.text[:500])
+
+        if not response.text:
+            return {'success': False, 'message': 'Hubtel returned empty response.'}
+
+        data = response.json()
+        response_code = str(data.get('responseCode', ''))
+
+        if response_code == '0000':
+            checkout_data = data.get('data', {})
             return {
                 'success': True,
-                'transaction_id': data.get('Data', {}).get('TransactionId', ''),
-                'message': 'Payment prompt sent to your phone. Approve to complete.'
+                'checkout_url': checkout_data.get('checkoutUrl', ''),
+                'checkout_direct_url': checkout_data.get('checkoutDirectUrl', ''),
+                'checkout_id': checkout_data.get('checkoutId', ''),
+                'reference': reference,
+                'message': 'Checkout initiated successfully.'
             }
-        return {
-            'success': False,
-            'message': data.get('ResponseMessage', 'Payment initiation failed. Check your number.')
-        }
+
+        msg = data.get('message') or data.get('status') or f'Hubtel error (code: {response_code})'
+        return {'success': False, 'message': msg}
+
     except requests.exceptions.Timeout:
-        return {'success': False, 'message': 'Hubtel is taking too long. Please try again.'}
+        return {'success': False, 'message': 'Hubtel timed out. Please try again.'}
     except Exception as e:
         return {'success': False, 'message': f'Connection error: {str(e)}'}
 
 
-def verify_hubtel_payment(transaction_id: str) -> dict:
-    """
-    Verify a transaction status by ID.
-    Used for polling or manual verification.
-    """
+def check_transaction_status(reference):
+    """Check payment status — poll this after initiating"""
     merchant_account = current_app.config['HUBTEL_MERCHANT_ACCOUNT']
-    url = f'https://api.hubtel.com/v1/merchantaccount/merchants/{merchant_account}/transactions/status/{transaction_id}'
+    url = f'https://api-txnstatus.hubtel.com/transactions/{merchant_account}/status'
+    headers = _get_auth_header()
 
     try:
-        response = requests.get(url, headers=_get_auth_header(), timeout=15)
+        response = requests.get(url, headers=headers,
+                                params={'clientReference': reference}, timeout=15)
+        if not response.text:
+            return {'status': 'unknown'}
+
         data = response.json()
-        status = data.get('Data', {}).get('TransactionStatus', '')
+        status = data.get('data', {}).get('status', '').lower()
 
-        if status == 'Success':
-            return {'success': True, 'status': 'paid'}
-        elif status == 'Pending':
-            return {'success': False, 'status': 'pending', 'message': 'Payment still pending'}
-        return {'success': False, 'status': 'failed', 'message': data.get('ResponseMessage', 'Payment failed')}
+        if status == 'paid':
+            return {'status': 'paid'}
+        elif status == 'unpaid':
+            return {'status': 'pending'}
+        return {'status': 'pending'}
     except Exception as e:
-        return {'success': False, 'status': 'error', 'message': str(e)}
+        print("Status check error:", e)
+        return {'status': 'unknown'}
 
 
-def generate_reference() -> str:
-    return f'DS-{secrets.token_hex(8).upper()}'
+def generate_reference():
+    return f'VL-{secrets.token_hex(8).upper()}'

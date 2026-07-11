@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -22,13 +22,19 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please sign in to continue.'
 
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        # If it's an AJAX/JSON request return JSON instead of redirect
+        if request.is_json or request.headers.get('Content-Type') == 'application/json':
+            return jsonify({'success': False, 'message': 'Please sign in to continue.'}), 401
+        return redirect(url_for('auth.login'))
+
     from app.models import User
 
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # Inject APP_NAME into every template automatically
     @app.context_processor
     def inject_globals():
         return {

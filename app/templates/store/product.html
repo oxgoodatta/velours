@@ -11,17 +11,15 @@
         {% if product.preview_image %}
         <img src="{{ url_for('static', filename=product.preview_image) }}" alt="{{ product.name }}" class="w-full h-full object-cover"/>
         {% else %}
-        <div class="w-full h-full flex items-center justify-center text-7xl">
-          {% if product.category %}{{ product.category.icon }}{% else %}📦{% endif %}
-        </div>
+        <div class="w-full h-full flex items-center justify-center text-7xl">📦</div>
         {% endif %}
       </div>
       {% if product.referral_commission_pct > 0 %}
-      <div class="mt-4 card rounded-2xl p-4 border-gold-500/30" style="border-color: rgba(245,158,11,0.3)">
+      <div class="mt-4 card rounded-2xl p-4" style="border-color:rgba(201,168,76,0.3)">
         <div class="flex items-center gap-3">
           <span class="text-2xl">💰</span>
           <div>
-            <p class="font-bold text-gold-500 text-sm">Earn {{ '%.0f'|format(product.referral_commission_pct) }}% Commission</p>
+            <p class="font-bold text-sm" style="color:var(--gold)">Earn {{ '%.0f'|format(product.referral_commission_pct) }}% Commission</p>
             <p class="text-xs text-muted">= GHS {{ '%.2f'|format(product.commission_amount) }} per referral sale</p>
           </div>
         </div>
@@ -32,38 +30,110 @@
     <!-- Product Info + Payment -->
     <div>
       {% if product.category %}
-      <span class="text-xs font-black text-gold-500 uppercase tracking-widest">{{ product.category.name }}</span>
+      <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--gold)">{{ product.category.name }}</span>
       {% endif %}
-      <h1 class="font-display text-3xl font-black mt-1 mb-4" style="color:var(--text-primary)">{{ product.name }}</h1>
+      <h1 class="font-display text-3xl font-bold mt-1 mb-4" style="color:var(--text-primary)">{{ product.name }}</h1>
       {% if product.description %}
       <p class="text-muted text-sm leading-relaxed mb-6">{{ product.description }}</p>
       {% endif %}
 
       <!-- Price -->
       <div class="card rounded-2xl p-5 mb-6">
-        <span class="font-display text-4xl font-black text-gold-500">GHS {{ '%.2f'|format(product.price) }}</span>
+        <span class="font-display text-4xl font-bold" style="color:var(--gold)">GHS {{ '%.2f'|format(product.price) }}</span>
         <p class="text-xs text-muted mt-1">One-time payment · Instant digital delivery ⚡</p>
       </div>
 
       {% if current_user.is_authenticated %}
-      <!-- ── EMBEDDED PAYMENT FORM ──────────────────────────────────── -->
-      <div x-data="{ paying: false, loading: false, msg: '', msgType: '' }">
+      <!-- ── PAYMENT FLOW ──────────────────────────────────────── -->
+      <div x-data="{
+        step: 'idle',
+        checkoutUrl: '',
+        refCode: new URLSearchParams(window.location.search).get('ref') || document.getElementById('ref-code')?.value || '',
+        loading: false,
+        error: '',
+        reference: '',
+        pollInterval: null,
 
-        <button @click="paying = true" x-show="!paying"
-                class="btn-gold w-full py-4 rounded-2xl text-lg shadow-gold-lg">
-          Buy Now — GHS {{ '%.2f'|format(product.price) }}
-        </button>
+        reset() { this.step = 'idle'; this.error = ''; clearInterval(this.pollInterval); },
 
-        <!-- MoMo Form (appears inline) -->
-        <div x-show="paying" x-transition class="card rounded-2xl p-6 space-y-4">
-          <h3 class="font-display font-bold" style="color:var(--text-primary)">Pay with Mobile Money</h3>
-          <p class="text-xs text-muted">Enter your number below. A USSD prompt will be sent to your phone.</p>
+        async pay() {
+          const network = document.getElementById('momo-network').value;
+          const phone = document.getElementById('momo-phone').value.trim();
+          const refCode = this.refCode;
+
+          if (!phone || phone.length < 10) {
+            this.error = 'Please enter a valid 10-digit MoMo number.';
+            return;
+          }
+
+          this.loading = true;
+          this.error = '';
+
+          try {
+            const res = await fetch('/payment/initiate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ product_id: {{ product.id }}, phone, network, ref_code: this.refCode })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+              this.reference = data.reference;
+              if (data.checkout_direct_url) {
+                this.checkoutUrl = data.checkout_direct_url;
+                this.step = 'checkout';
+              } else {
+                this.step = 'waiting';
+              }
+              this.startPolling();
+            } else {
+              this.error = data.message;
+            }
+          } catch(e) {
+            this.error = 'Connection error. Please try again.';
+          }
+
+          this.loading = false;
+        },
+
+        startPolling() {
+          this.pollInterval = setInterval(async () => {
+            try {
+              const res = await fetch('/payment/status/' + this.reference);
+              const data = await res.json();
+              if (data.status === 'paid') {
+                clearInterval(this.pollInterval);
+                this.step = 'success';
+                setTimeout(() => { window.location.href = data.redirect; }, 2000);
+              } else if (data.status === 'failed') {
+                clearInterval(this.pollInterval);
+                this.step = 'idle';
+                this.error = 'Payment was not completed. Please try again.';
+              }
+            } catch(e) {}
+          }, 4000);
+        }
+      }">
+
+        <!-- STEP 1: Initial buy button -->
+        <div x-show="step === 'idle'">
+          <button @click="step = 'form'"
+                  class="btn-gold w-full py-4 rounded-2xl text-base font-bold shadow-gold-lg">
+            Pay Now — GHS {{ '%.2f'|format(product.price) }}
+          </button>
+        </div>
+
+        <!-- STEP 2: MoMo form -->
+        <div x-show="step === 'form'" x-transition class="card rounded-2xl p-6 space-y-4">
+          <h3 class="font-display font-bold text-base" style="color:var(--text-primary)">Pay with Mobile Money</h3>
+          <p class="text-xs text-muted">A prompt will be sent to your phone to approve the payment.</p>
 
           <div>
-            <label class="text-xs font-semibold text-muted block mb-1">MoMo Network</label>
+            <label class="text-xs font-semibold text-muted block mb-1.5 uppercase tracking-wide">Network</label>
             <select id="momo-network"
-                    class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
-                    style="color:var(--text-primary)">
+                    class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none"
+                    style="color:var(--text-primary)"
+                    onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''">
               <option value="MTN">MTN MoMo</option>
               <option value="AirtelTigo">AirtelTigo Money</option>
               <option value="Telecel">Telecel Cash</option>
@@ -71,93 +141,99 @@
           </div>
 
           <div>
-            <label class="text-xs font-semibold text-muted block mb-1">MoMo Number</label>
+            <label class="text-xs font-semibold text-muted block mb-1.5 uppercase tracking-wide">MoMo Number</label>
             <input type="tel" id="momo-phone" placeholder="0241234567" maxlength="10"
-                   class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-gold-500"
-                   style="color:var(--text-primary)"/>
+                   class="w-full card px-4 py-3 rounded-xl text-sm focus:outline-none"
+                   style="color:var(--text-primary)"
+                   onfocus="this.style.borderColor='#C9A84C'" onblur="this.style.borderColor=''"/>
           </div>
 
           <input type="hidden" id="ref-code" value="{{ ref }}"/>
 
-          <!-- Status message -->
-          <div x-show="msg" x-cloak
-               class="rounded-xl px-4 py-3 text-sm font-medium"
-               :class="msgType === 'success' ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400'">
-            <span x-text="msg"></span>
+          <!-- Error -->
+          <div x-show="error" x-cloak
+               class="rounded-xl px-4 py-3 text-sm font-medium bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900">
+            <span x-text="error"></span>
           </div>
 
           <div class="flex gap-3">
-            <button @click="submitPayment($el, {{ product.id }})"
-                    :disabled="loading"
-                    class="btn-gold flex-1 py-3 rounded-xl text-sm font-bold shadow-gold disabled:opacity-60 flex items-center justify-center gap-2">
-              <svg x-show="loading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <button @click="pay()" :disabled="loading"
+                    class="btn-gold flex-1 py-3.5 rounded-xl text-sm font-bold shadow-gold disabled:opacity-60 flex items-center justify-center gap-2">
+              <svg x-show="loading" class="animate-spin w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>
-              <span x-text="loading ? 'Sending prompt…' : 'Send MoMo Prompt'"></span>
+              <span x-text="loading ? 'Processing…' : 'Pay Now'"></span>
             </button>
-            <button @click="paying = false; msg = ''" class="card px-4 py-3 rounded-xl text-sm text-muted hover:text-gold-500 transition-colors">
+            <button @click="reset()" class="card px-4 py-3 rounded-xl text-sm text-muted hover:text-accent transition-colors">
               Cancel
             </button>
           </div>
-
-          <p class="text-[11px] text-muted text-center">
-            After clicking, check your phone for the MoMo approval prompt.
-          </p>
         </div>
-      </div>
 
+        <!-- STEP 3: Hubtel Checkout iframe -->
+        <div x-show="step === 'checkout'" x-transition class="card rounded-2xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-themed flex items-center justify-between">
+            <p class="text-sm font-semibold" style="color:var(--text-primary)">Complete Payment</p>
+            <button @click="reset()" class="text-xs text-muted hover:text-red-500 transition-colors">Cancel</button>
+          </div>
+          <iframe :src="checkoutUrl" width="100%" height="500px" frameborder="0"
+                  style="border:none; min-height:500px">
+          </iframe>
+        </div>
+
+        <!-- STEP 3b: Waiting for approval (no iframe) -->
+        <div x-show="step === 'waiting'" x-transition
+             class="card rounded-2xl p-6 text-center space-y-4">
+          <!-- Animated pulse ring -->
+          <div class="relative w-16 h-16 mx-auto">
+            <div class="absolute inset-0 rounded-full animate-ping opacity-20" style="background:var(--gold)"></div>
+            <div class="relative w-16 h-16 rounded-full flex items-center justify-center" style="background:rgba(201,168,76,0.12); border:2px solid rgba(201,168,76,0.4)">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--gold)">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="font-display font-bold text-base mb-1" style="color:var(--text-primary)">Waiting for Payment Approval</h3>
+            <p class="text-sm text-muted">Check your phone and approve the MoMo prompt.</p>
+            <p class="text-xs text-muted mt-1">This page will update automatically once payment is confirmed.</p>
+          </div>
+
+          <!-- Animated dots -->
+          <div class="flex justify-center gap-1.5">
+            <div class="w-2 h-2 rounded-full animate-bounce" style="background:var(--gold); animation-delay:0ms"></div>
+            <div class="w-2 h-2 rounded-full animate-bounce" style="background:var(--gold); animation-delay:150ms"></div>
+            <div class="w-2 h-2 rounded-full animate-bounce" style="background:var(--gold); animation-delay:300ms"></div>
+          </div>
+
+          <button @click="reset()" class="text-xs text-muted hover:text-accent transition-colors underline">
+            Cancel and try again
+          </button>
+        </div>
+
+        <!-- STEP 4: Success -->
+        <div x-show="step === 'success'" x-transition
+             class="card rounded-2xl p-6 text-center space-y-3">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
+               style="background:rgba(34,197,94,0.1); border:2px solid rgba(34,197,94,0.3)">
+            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <h3 class="font-display font-bold text-base text-green-500">Payment Confirmed!</h3>
+          <p class="text-xs text-muted">Redirecting you to your product…</p>
+        </div>
+
+      </div>
       {% else %}
       <a href="{{ url_for('auth.login') }}?next={{ request.url }}"
-         class="btn-gold block w-full text-center py-4 rounded-2xl text-lg shadow-gold-lg">
+         class="btn-gold block w-full text-center py-4 rounded-2xl text-base font-bold shadow-gold-lg">
         Sign in to Purchase
       </a>
       {% endif %}
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-async function submitPayment(btn, productId) {
-  const network = document.getElementById('momo-network').value;
-  const phone   = document.getElementById('momo-phone').value.trim();
-  const refCode = document.getElementById('ref-code').value;
-
-  // Get Alpine component
-  const comp = btn.closest('[x-data]').__x.$data;
-  comp.msg = '';
-
-  if (!phone || phone.length < 10) {
-    comp.msg = 'Please enter a valid 10-digit MoMo number.';
-    comp.msgType = 'error';
-    return;
-  }
-
-  comp.loading = true;
-
-  try {
-    const res = await fetch('/payment/initiate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ product_id: productId, phone, network, ref_code: refCode })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      comp.msg = '✅ ' + data.message + ' Approve the prompt on your phone, then wait — your product will appear in your dashboard.';
-      comp.msgType = 'success';
-    } else {
-      comp.msg = '❌ ' + data.message;
-      comp.msgType = 'error';
-    }
-  } catch (e) {
-    comp.msg = 'Network error. Please try again.';
-    comp.msgType = 'error';
-  }
-
-  comp.loading = false;
-}
-</script>
 {% endblock %}
