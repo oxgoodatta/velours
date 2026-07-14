@@ -1,28 +1,20 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div x-data="{ sidebarOpen: window.innerWidth >= 768 }" class="flex min-h-screen relative">
+<div x-data="{ sidebarOpen: false }" x-init="sidebarOpen = window.innerWidth >= 768" class="flex min-h-screen relative">
 
-  <!-- Sidebar overlay (mobile) -->
+  <!-- Sidebar overlay (mobile only) -->
   <div x-show="sidebarOpen && window.innerWidth < 768"
        @click="sidebarOpen = false"
-       x-cloak
        class="fixed inset-0 bg-black/50 z-30 md:hidden">
   </div>
 
   <!-- Sidebar -->
   <aside x-show="sidebarOpen"
-         x-cloak
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="-translate-x-full"
-         x-transition:enter-end="translate-x-0"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="translate-x-0"
-         x-transition:leave-end="-translate-x-full"
          class="fixed left-0 top-20 bottom-0 w-56 z-40 overflow-y-auto border-r border-themed flex-shrink-0"
          style="background:var(--bg-card)">
     <div class="p-4">
-      <!-- Close button (mobile only) -->
+      <!-- Close button mobile only -->
       <div class="flex justify-between items-center mb-4 md:hidden">
         <p class="text-xs font-black text-muted uppercase tracking-widest">Admin Panel</p>
         <button @click="sidebarOpen = false" class="p-1 rounded-lg text-muted hover:text-accent">
@@ -74,12 +66,16 @@
          style="background:var(--bg-card)">
       <button @click="sidebarOpen = !sidebarOpen"
               class="p-2 rounded-xl border border-themed hover:border-gold-400 transition-colors flex-shrink-0">
-        <svg x-show="!sidebarOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-primary)">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-        <svg x-show="sidebarOpen" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-primary)">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
+        <template x-if="!sidebarOpen">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-primary)">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </template>
+        <template x-if="sidebarOpen">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-primary)">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </template>
       </button>
       <p class="text-sm font-semibold text-muted">Admin Panel</p>
     </div>
