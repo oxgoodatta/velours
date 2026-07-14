@@ -18,11 +18,8 @@ def fulfill_order(order: Order):
     order.product.total_sales += 1
 
     buyer = User.query.get(order.user_id)
-
-    # Grant referral slots to buyer based on purchase amount
     buyer.add_referral_slots(order.amount)
 
-    # Find referrer — from order ref code OR buyer's referred_by relationship
     referrer = None
     if order.referral_code_used:
         referrer = User.query.filter_by(referral_code=order.referral_code_used).first()
@@ -32,9 +29,7 @@ def fulfill_order(order: Order):
     if referrer and referrer.id != buyer.id:
         commission_amount = order.product.commission_amount
         print(f'Commission: GHS{commission_amount} to {referrer.name} for order {order.reference}')
-
         if commission_amount > 0:
-            # No duplicate commission for same order
             existing = Commission.query.filter_by(order_id=order.id).first()
             if not existing:
                 commission = Commission(
@@ -46,14 +41,9 @@ def fulfill_order(order: Order):
                 )
                 referrer.wallet_balance += commission_amount
                 db.session.add(commission)
-
-                # Consume one referral slot on buyer's FIRST purchase only
-                paid_count = Order.query.filter_by(
-                    user_id=buyer.id, status='paid'
-                ).count()
+                paid_count = Order.query.filter_by(user_id=buyer.id, status='paid').count()
                 if paid_count == 1 and referrer.referral_slots_remaining > 0:
                     referrer.referral_slots_used += 1
-
                 print(f'Commission added. {referrer.name} wallet: GHS{referrer.wallet_balance}')
 
     db.session.commit()
@@ -151,17 +141,24 @@ def status(reference):
 def callback():
     try:
         data = request.get_json(silent=True) or {}
+
+        print("=== CALLBACK RECEIVED ===")
+        print("Full data:", data)
+
         response_code = str(data.get('ResponseCode', ''))
         callback_data = data.get('Data', {})
         reference = callback_data.get('ClientReference', '')
         cb_status = callback_data.get('Status', '')
 
-        print("=== CALLBACK ===", response_code, reference, cb_status)
+        print("ResponseCode:", response_code)
+        print("Reference:", reference)
+        print("Status:", cb_status)
 
         if reference and response_code == '0000' and cb_status.lower() == 'success':
             order = Order.query.filter_by(reference=reference).first()
             if order:
                 fulfill_order(order)
+                print("Order fulfilled:", reference)
 
         return jsonify({'status': 'received'}), 200
     except Exception as e:
@@ -171,12 +168,27 @@ def callback():
 
 @payment_bp.route('/success-redirect')
 def success_redirect():
+    """Hubtel redirects here after payment with checkoutid or clientReference"""
     reference = request.args.get('clientReference', '')
+    checkout_id = request.args.get('checkoutid', '')
+
+    print("=== SUCCESS REDIRECT ===")
+    print("clientReference:", reference)
+    print("checkoutid:", checkout_id)
+    print("All args:", dict(request.args))
+
+    order = None
     if reference:
         order = Order.query.filter_by(reference=reference).first()
-        if order:
-            fulfill_order(order)
-            return redirect(url_for('store.payment_success', reference=reference))
+    elif checkout_id:
+        order = Order.query.filter_by(hubtel_transaction_id=checkout_id).first()
+
+    if order:
+        print("Order found:", order.reference, "| status:", order.status)
+        fulfill_order(order)
+        return redirect(url_for('store.payment_success', reference=order.reference))
+
+    print("No order found — redirecting home")
     return redirect(url_for('store.index'))
 
 
