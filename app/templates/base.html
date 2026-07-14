@@ -1,39 +1,38 @@
 {% extends 'base.html' %}
 
-{% block content %}
-<div x-data="{ sidebarOpen: window.innerWidth >= 768 }" class="flex min-h-screen relative">
+{% block head %}
+<style>
+  #admin-sidebar {
+    transition: transform 0.25s ease;
+  }
+</style>
+{% endblock %}
 
-  <!-- Sidebar overlay (mobile) -->
-  <div x-show="sidebarOpen && window.innerWidth < 768"
-       @click="sidebarOpen = false"
-       x-cloak
-       class="fixed inset-0 bg-black/50 z-30 md:hidden">
+{% block content %}
+<div class="min-h-screen" style="background:var(--bg-primary)">
+
+  <!-- Dark overlay — mobile only, shown when sidebar open -->
+  <div id="sidebar-overlay"
+       onclick="closeSidebar()"
+       class="fixed inset-0 bg-black/60 z-40 hidden">
   </div>
 
-  <!-- Sidebar -->
-  <aside x-show="sidebarOpen"
-         x-cloak
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="-translate-x-full"
-         x-transition:enter-end="translate-x-0"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="translate-x-0"
-         x-transition:leave-end="-translate-x-full"
-         class="fixed left-0 top-20 bottom-0 w-56 z-40 overflow-y-auto border-r border-themed flex-shrink-0"
-         style="background:var(--bg-card)">
-    <div class="p-4">
-      <!-- Close button (mobile only) -->
-      <div class="flex justify-between items-center mb-4 md:hidden">
+  <!-- Sidebar — slides in from left, always on top -->
+  <aside id="admin-sidebar"
+         class="fixed left-0 top-0 bottom-0 w-64 z-50 overflow-y-auto shadow-2xl"
+         style="background:var(--bg-card); transform: translateX(-100%);">
+    <div class="p-5 pt-6">
+      <div class="flex justify-between items-center mb-6">
         <p class="text-xs font-black text-muted uppercase tracking-widest">Admin Panel</p>
-        <button @click="sidebarOpen = false" class="p-1 rounded-lg text-muted hover:text-accent">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button onclick="closeSidebar()"
+                class="p-1.5 rounded-lg hover:bg-gold-500/10 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
       </div>
-      <p class="text-xs font-black text-muted uppercase tracking-widest mb-4 px-2 hidden md:block">Admin Panel</p>
 
-      <nav class="space-y-0.5">
+      <nav class="space-y-1">
         {% set nav_items = [
           ('admin.dashboard', '📊', 'Dashboard'),
           ('admin.categories', '📂', 'Categories'),
@@ -46,47 +45,68 @@
         ] %}
         {% for endpoint, icon, label in nav_items %}
         <a href="{{ url_for(endpoint) }}"
-           @click="if(window.innerWidth < 768) sidebarOpen = false"
-           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
-           {% if request.endpoint == endpoint %}text-navy font-bold{% else %}text-muted hover:text-accent hover:bg-gold-500/5{% endif %}"
-           {% if request.endpoint == endpoint %}style="background:var(--gold)"{% endif %}>
-          <span>{{ icon }}</span>{{ label }}
+           onclick="closeSidebar()"
+           class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors
+           {% if request.endpoint == endpoint %}font-bold{% else %}text-muted hover:text-accent hover:bg-gold-500/5{% endif %}"
+           style="{% if request.endpoint == endpoint %}background:var(--gold); color:#0D1B2A{% endif %}">
+          <span class="text-base">{{ icon }}</span>
+          <span>{{ label }}</span>
         </a>
         {% endfor %}
-        <div class="border-t border-themed pt-2 mt-3">
+
+        <div class="border-t border-themed pt-3 mt-3">
           <a href="{{ url_for('store.index') }}"
-             @click="if(window.innerWidth < 768) sidebarOpen = false"
-             class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-accent transition-colors">
-            <span>🏠</span>View Store
+             onclick="closeSidebar()"
+             class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted hover:text-accent hover:bg-gold-500/5 transition-colors">
+            <span class="text-base">🏠</span>
+            <span>View Store</span>
           </a>
         </div>
       </nav>
     </div>
   </aside>
 
-  <!-- Main content -->
-  <main class="flex-1 min-h-screen transition-all duration-200"
-        :class="sidebarOpen ? 'md:ml-56' : 'ml-0'"
-        style="background:var(--bg-primary)">
-
-    <!-- Admin topbar with hamburger -->
-    <div class="sticky top-20 z-20 border-b border-themed px-4 py-3 flex items-center gap-3"
+  <!-- Main content — full width always -->
+  <div class="w-full">
+    <!-- Topbar with hamburger -->
+    <div class="sticky top-20 z-30 border-b border-themed px-4 py-3 flex items-center gap-3"
          style="background:var(--bg-card)">
-      <button @click="sidebarOpen = !sidebarOpen"
-              class="p-2 rounded-xl border border-themed hover:border-gold-400 transition-colors flex-shrink-0">
-        <svg x-show="!sidebarOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-primary)">
+      <button onclick="openSidebar()"
+              class="p-2 rounded-xl border border-themed hover:border-gold-400 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-primary)">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
-        <svg x-show="sidebarOpen" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-primary)">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
       </button>
-      <p class="text-sm font-semibold text-muted">Admin Panel</p>
+      <span class="text-sm font-semibold text-muted">
+        {% block page_title %}Admin{% endblock %}
+      </span>
     </div>
 
-    <div class="p-4 sm:p-8">
+    <!-- Page content -->
+    <div class="p-4 sm:p-6 lg:p-8">
       {% block admin_content %}{% endblock %}
     </div>
-  </main>
+  </div>
 </div>
+
+<script>
+  function openSidebar() {
+    document.getElementById('admin-sidebar').style.transform = 'translateX(0)';
+    document.getElementById('sidebar-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar() {
+    document.getElementById('admin-sidebar').style.transform = 'translateX(-100%)';
+    document.getElementById('sidebar-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // On desktop — auto open and keep open
+  if (window.innerWidth >= 1024) {
+    document.getElementById('admin-sidebar').style.transform = 'translateX(0)';
+    document.getElementById('admin-sidebar').style.top = '80px';
+    // On desktop don't show overlay
+  }
+</script>
 {% endblock %}
